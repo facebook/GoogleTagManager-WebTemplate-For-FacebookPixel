@@ -1,0 +1,46 @@
+homepage: "https://www.simoahava.com/"
+documentation: "https://www.simoahava.com/custom-templates/facebook-pixel"
+versions:
+  # Latest version
+  - sha: 11c004614f6b8f7cc999caabef521086116ce302
+    changeNotes: Added Event ID to pixel fields for server-side deduplication.
+  # Older versions
+  - sha: 6eab67135d4e8b6052332e9b52dcb3d7e88b5b2c
+    changeNotes: Added External ID to Advanced Matching. It replaces the deprecated User ID.
+  - sha: b676921cf6cdf73c868fef2cc5cfd564bdeaf95f
+    changeNotes: |2
+      Update template agent string.
+      Remove empty array from DPO default if not set.
+  - sha: 547cecfcd373f533b4d7f68f049a9662ec932e3a
+    changeNotes: Add agent string to help monitor template usage.
+  - sha: f21ffb21c9f9bfffcfd64bd7e6e9f84efc5d2b91
+    changeNotes: Do not allow empty table to be sent with Advanced Matching.
+  - sha: d20c7af198f6c555c9327c8dfb67f1ebf8de816d
+    changeNotes: |2
+      Remove deprecated User Properties option.
+      Add Data Processing Options.
+      Fix bug with empty Advanced Matching list.
+  - sha: ef005f12f5429183534e74e117365e02dac51cd0
+    changeNotes: |2
+      Added unit tests.
+      Added Enhanced Ecommerce integration.
+  - sha: ccffe40987094419fffdee44a412ee60e26ff52e
+    changeNotes: Added option to disable automatic tracking of History events (pushState, replaceState)
+  - sha: c3af0827b14488dd9c7ca297f5ab8d44525ea212
+    changeNotes: |2
+      Fixed country in Advanced Matching to use correct key.
+      REMEMBER TO REVIEW THE TAG IF YOU USED COUNTRY!
+  - sha: b5cc43efe1bdbb68039c6825e920e709c06149d5
+    changeNotes: Fix bug where object properties were not correctly built.
+  - sha: cd5ae96875fd9fa0b5eccfb0e575c73b522eb1d4
+    changeNotes: |2
+      Fix object properties to merge variable and table.
+      Update event name selection to allow for variable as well (BREAKING CHANGE).
+  - sha: 16f09061f5e70563f10d4aa9f0a1b9412e19f35c
+    changeNotes: Update logo
+  - sha: ff7bf31a0777e22a370d6371607022fe2a6d1b7c
+    changeNotes: |2
+      Add support for "consent" command.
+      Add support for using a variable to populate object properties.
+  - sha: e1206f9c677fe67348c6678c4669952cb0c0b97b
+    changeNotes: Initial release.
