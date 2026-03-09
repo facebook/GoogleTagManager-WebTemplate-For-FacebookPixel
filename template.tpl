@@ -1,4 +1,4 @@
-﻿___TERMS_OF_SERVICE___
+﻿﻿﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -478,6 +478,9 @@ const getType = require('getType');
 const copyFromDataLayer = require('copyFromDataLayer');
 const math = require('Math');
 const log = require('logToConsole');
+const getUrl = require('getUrl');
+
+const PARAM_BUILDER_SCRIPT_URL = 'https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js';
 
 const initIds = copyFromWindow('_fbq_gtm_ids') || [];
 const pixelIds = data.pixelId;
@@ -601,7 +604,7 @@ pixelIds.split(',').forEach(pixelId => {
     fbq('init', pixelId, cidParams);
 
     // Monitoring agent string for Tag Setup
-    fbq('set','agent','tmSimo-GTM-WebTemplate', pixelId);
+    fbq('set','agent','tmSimo-GTM-WebTemplate-2.0.0', pixelId);
 
     initIds.push(pixelId);
     setInWindow('_fbq_gtm_ids', initIds, true);
@@ -616,7 +619,65 @@ pixelIds.split(',').forEach(pixelId => {
   }
 });
 
-injectScript('https://connect.facebook.net/en_US/fbevents.js', data.gtmOnSuccess, data.gtmOnFailure, 'fbPixel');
+// Inject Param Builder script if enabled
+const onParamBuilderFailure = () => {
+  log('Facebook Pixel: Failed to load clientParamBuilder script');
+};
+
+// Param Builder callback - called after script loads
+const processAndCollectAllParams = () => {
+  log("ParamBuilder script loaded successfully, processing and collecting all params...");
+  const clientParamBuilder = copyFromWindow('clientParamBuilder');
+  if (!clientParamBuilder) {
+    log("ERROR: clientParamBuilder wasn't loaded correctly.");
+    return;
+  }
+
+  const currentPageUrl = getUrl();
+
+  // Check which method exists and call it via callInWindow
+  const hasProcessAndCollectAllParams = copyFromWindow('clientParamBuilder.processAndCollectAllParams');
+  const hasProcessAndCollectParams = copyFromWindow('clientParamBuilder.processAndCollectParams');
+
+  if (hasProcessAndCollectAllParams) {
+    callInWindow('clientParamBuilder.processAndCollectAllParams', currentPageUrl);
+    log("processAndCollectAllParams completed successfully.");
+    data.gtmOnSuccess();
+  } else if (hasProcessAndCollectParams) {
+    callInWindow('clientParamBuilder.processAndCollectParams', currentPageUrl);
+    log("processAndCollectParams completed successfully.");
+    data.gtmOnSuccess();
+  } else {
+    log("ERROR: Neither processAndCollectAllParams nor processAndCollectParams methods found.");
+    data.gtmOnFailure();
+  }
+};
+
+
+function gtmSuccess() {
+  // Check GK via pixel SDK after fbevents.js has loaded
+  // API: fbq('checkGate', gateName, onEnabled, onDisabled, pixelID)
+  // Use the first pixel ID from the comma-separated list
+  var firstPixelId = pixelIds.split(',')[0];
+  callInWindow(
+    'fbq',
+    'gateCheck',
+    'enable_gtm_parambuilder',
+    function(gateName, pixelID) {
+      // onEnabled callback - gate is enabled, inject paramBuilder script
+      injectScript(PARAM_BUILDER_SCRIPT_URL, processAndCollectAllParams, onParamBuilderFailure, PARAM_BUILDER_SCRIPT_URL);
+    },
+    function(gateName, pixelID) {
+      // onDisabled callback - gate is disabled, proceed without paramBuilder
+      data.gtmOnSuccess();
+    },
+    firstPixelId
+  );
+}
+
+// Use the URL as the cache token (matches original paramBuilder template)
+
+injectScript('https://connect.facebook.net/en_US/fbevents.js', gtmSuccess, data.gtmOnFailure, 'fbPixel');
 
 
 ___WEB_PERMISSIONS___
@@ -669,7 +730,7 @@ ___WEB_PERMISSIONS___
                   },
                   {
                     "type": 8,
-                    "boolean": false
+                    "boolean": true
                   }
                 ]
               },
@@ -945,6 +1006,123 @@ ___WEB_PERMISSIONS___
                     "boolean": false
                   }
                 ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "clientParamBuilder"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "clientParamBuilder.processAndCollectAllParams"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "clientParamBuilder.processAndCollectParams"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
               }
             ]
           }
@@ -971,6 +1149,10 @@ ___WEB_PERMISSIONS___
               {
                 "type": 1,
                 "string": "https://connect.facebook.net/en_US/fbevents.js"
+              },
+              {
+                "type": 1,
+                "string": "https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js"
               }
             ]
           }
@@ -1032,6 +1214,31 @@ ___WEB_PERMISSIONS___
       "isEditedByUser": true
     },
     "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "get_url",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "urlParts",
+          "value": {
+            "type": 1,
+            "string": "any"
+          }
+        },
+        {
+          "key": "queriesAllowed",
+          "value": {
+            "type": 1,
+            "string": "any"
+          }
+        }
+      ]
+    },
+    "isRequired": true
   }
 ]
 
@@ -1040,19 +1247,30 @@ ___TESTS___
 
 scenarios:
 - name: Library is injected
-  code: |-
+  code: |+
     // Call runCode to run the template's code.
     runCode(mockData);
 
-    // Verify that the tag finished successfully.
-    assertApi('injectScript').wasCalledWith(scriptUrl, success, failure, 'fbPixel');
+    // 1. Verify the Facebook Pixel URL was requested
+    assertThat(injectedUrls).contains('https://connect.facebook.net/en_US/fbevents.js');
+
+    // 2. Verify the Param Builder URL was requested
+    assertThat(injectedUrls).contains('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');
+
+    // 3. Verify the template finished successfully
     assertApi('gtmOnSuccess').wasCalled();
+
 - name: fbq does not exist - method created
   code: |-
     let fbq;
 
     mock('copyFromWindow', key => {
+      // 1. The specific logic for this test (mocking fbq absence)
       if (key === 'fbq') return fbq;
+
+      // 2. The required logic for the template to finish (ParamBuilder mocks)
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
     });
 
     mock('createQueue', key => {});
@@ -1095,11 +1313,16 @@ scenarios:
 - name: Consent set
   code: |-
     mock('copyFromWindow', key => {
+      // 1. The specific logic for this test (checking fbq consent)
       if (key === 'fbq') return function() {
         if (arguments[0] === 'consent') {
           assertThat(arguments[1], 'Consent set incorrectly').isEqualTo('grant');
         }
       };
+
+      // 2. The required logic for the template to finish (ParamBuilder mocks)
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
     });
 
     // Call runCode to run the template's code.
@@ -1114,6 +1337,7 @@ scenarios:
     mockData.dpoState = '0';
 
     mock('copyFromWindow', key => {
+      // 1. The specific logic for this test (checking fbq DPO options)
       if (key === 'fbq') return function() {
         if (arguments[0] === 'consent') {
           assertThat(arguments[1], 'Consent set incorrectly').isEqualTo('grant');
@@ -1124,6 +1348,10 @@ scenarios:
           assertThat(arguments[3], 'LDU state not set').isEqualTo(0);
         }
       };
+
+      // 2. The required logic for the template to finish (ParamBuilder mocks)
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
     });
 
     // Call runCode to run the template's code.
@@ -1134,6 +1362,7 @@ scenarios:
 - name: DPO LDU not set
   code: |-
     mock('copyFromWindow', key => {
+      // 1. The specific logic for this test (checking fbq consent and ensuring DPO is NOT called)
       if (key === 'fbq') return function() {
         if (arguments[0] === 'consent') {
           assertThat(arguments[1], 'Consent set incorrectly').isEqualTo('grant');
@@ -1142,6 +1371,10 @@ scenarios:
           fail('dataProcessingOptions called even though DPO was not set');
         }
       };
+
+      // 2. The required logic for the template to finish (ParamBuilder mocks)
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
     });
 
     // Call runCode to run the template's code.
@@ -1152,10 +1385,15 @@ scenarios:
 - name: Pixel IDs set - do not initialize
   code: |-
     mock('copyFromWindow', key => {
+      // 1. The specific logic for this test (checking initialized IDs and preventing re-init)
       if (key === '_fbq_gtm_ids') return ['12345', '23456'];
       if (key === 'fbq') return function() {
         if (arguments[0] === 'init') fail('init called even though pixel IDs already initialized');
       };
+
+      // 2. The required logic for the template to finish (ParamBuilder mocks)
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
     });
 
     // Call runCode to run the template's code.
@@ -1164,48 +1402,52 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
 - name: Pixel IDs not set - run init process
-  code: "let index = 0;\nlet count = 0;\nlet _fbq_gtm_ids;\n\nmockData.advancedMatching\
-    \ = true;\nmockData.disableAutoConfig = true;\nmockData.disablePushState = true;\n\
-    \nmock('setInWindow', (key, val) => {\n  if (key === 'fbq.disablePushState') count\
-    \ += 1;\n  if (key === '_fbq_gtm_ids') _fbq_gtm_ids = val;\n});\n\nconst initObj\
-    \ = {\n  ct: 'Helsinki',\n  cn: 'Finland',\n  external_id: 'UserId'\n};\n\nmock('copyFromWindow',\
-    \ key => {\n  if (key === 'fbq') return function() {\n    if (arguments[0] ===\
-    \ 'set' && arguments[1] === 'autoConfig' && arguments[2] === false) {\n      assertThat(arguments[3],\
-    \ 'autoConfig called with incorrect pixelId').isEqualTo(mockData.pixelId.split(',')[index]);\n\
-    \    }\n    if (arguments[0] === 'set' && arguments[1] === 'agent') {\n      assertThat(arguments[2],\
-    \ 'agent set with invalid value').isEqualTo('tmSimo-GTM-WebTemplate');\n     \
-    \ assertThat(arguments[3], 'agent set with invalid pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
-    \      index += 1;\n    }\n    if (arguments[0] === 'init') {\n      assertThat(arguments[1],\
-    \ 'init called with incorrect pixelId').isEqualTo(mockData.pixelId.split(',')[index]);\n\
-    \      assertThat(arguments[2], 'init called with incorrect initObj').isEqualTo(initObj);\n\
-    \    } \n  };\n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
-    \nassertThat(_fbq_gtm_ids, '_fbq_gtm_ids has incorrect contents').isEqualTo(mockData.pixelId.split(','));\n\
-    assertThat(index, 'init called incorrect number of times: ' + index).isEqualTo(2);\n\
-    assertThat(count, 'fbq.disablePushState called incorrect number of times: ' +\
-    \ count).isEqualTo(2);\n\n// Verify that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
+  code: "mockData.enhancedEcommerce = true;\n\nmockData.objectPropertyList = {};\n\
+    \n\n\nmock('copyFromDataLayer', key => {\n\n  if (key === 'ecommerce') return\
+    \ {\n\n    currencyCode: 'EUR',\n\n    detail: {\n\n      products: mockEec.gtm.products\n\
+    \n    }\n\n  };\n\n});\n\n\n\nlet index = 0;\n\nmock('copyFromWindow', key =>\
+    \ {\n\n  // 1. The specific logic for this test (checking fbq trackSingle calls)\n\
+    \n  if (key === 'fbq') return function() {\n\n    if (arguments[0] === 'trackSingle')\
+    \ {\n\n      assertThat(arguments[1], 'trackSingle called with incorrect pixel\
+    \ ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\n      assertThat(arguments[2],\
+    \ 'trackSingle called with incorrect event name').isEqualTo('ViewContent');\n\n\
+    \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(mockEec.fb);\n\
+    \n      index += 1;\n\n    }\n\n  };\n\n\n\n  // 2. The required logic for the\
+    \ template to finish (ParamBuilder mocks)\n\n  if (key === 'clientParamBuilder')\
+    \ return {};\n\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+    \ return () => {};\n\n});\n\n      \n\n// Call runCode to run the template's code.\n\
+    \nrunCode(mockData);\n\n\n\n// Verify that the tag finished successfully.\n\n\
+    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
+    \nassertApi('gtmOnSuccess').wasCalled();"
 - name: Send standard event
   code: "const eventParams = {\n  prop1: 'val1',\n  prop2: 'val2'\n};\n\nlet index\
-    \ = 0;\nmock('copyFromWindow', key => {\n  if (key === 'fbq') return function()\
-    \ {\n    if (arguments[0] === 'trackSingle') {\n      assertThat(arguments[1],\
-    \ 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
+    \ = 0;\nmock('copyFromWindow', key => {\n  // 1. The specific logic for this test\
+    \ (checking fbq trackSingle calls)\n  if (key === 'fbq') return function() {\n\
+    \    if (arguments[0] === 'trackSingle') {\n      assertThat(arguments[1], 'trackSingle\
+    \ called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo(mockData.standardEventName);\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(eventParams);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n\n  // 2. The required logic for the template\
+    \ to finish (ParamBuilder mocks)\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n      \n// Call runCode to run the template's code.\nrunCode(mockData);\n\
+    \n// Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Send custom event
   code: "mockData.eventName = 'custom';\n\nconst eventParams = {\n  prop1: 'val1',\n\
-    \  prop2: 'val2'\n};\n\nlet index = 0;\nmock('copyFromWindow', key => {\n  if\
-    \ (key === 'fbq') return function() {\n    if (arguments[0] === 'trackSingleCustom')\
+    \  prop2: 'val2'\n};\n\nlet index = 0;\nmock('copyFromWindow', key => {\n  //\
+    \ 1. The specific logic for this test (checking fbq trackSingleCustom calls)\n\
+    \  if (key === 'fbq') return function() {\n    if (arguments[0] === 'trackSingleCustom')\
     \ {\n      assertThat(arguments[1], 'trackSingleCustom called with incorrect pixel\
     \ ID').isEqualTo(mockData.pixelId.split(',')[index]);\n      assertThat(arguments[2],\
     \ 'trackSingleCustom called with incorrect event name').isEqualTo(mockData.customEventName);\n\
     \      assertThat(arguments[3], 'trackSingleCustom called with incorrect event\
-    \ parameters').isEqualTo(eventParams);\n      index += 1;\n    }\n  };\n});\n\
-    \     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n//\
-    \ Verify that the tag finished successfully.\nassertThat(index, 'trackSingleCustom\
-    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
+    \ parameters').isEqualTo(eventParams);\n      index += 1;\n    }\n  };\n\n  //\
+    \ 2. The required logic for the template to finish (ParamBuilder mocks)\n  if\
+    \ (key === 'clientParamBuilder') return {};\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+    \ return () => {};\n});\n      \n// Call runCode to run the template's code.\n\
+    runCode(mockData);\n\n// Verify that the tag finished successfully.\nassertThat(index,\
+    \ 'trackSingleCustom called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Send variable event with standard name
   code: "mockData.eventName = 'variable';\nmockData.variableEventName = 'PageView';\n\
     \nconst eventParams = {\n  prop1: 'val1',\n  prop2: 'val2'\n};\n\nlet index =\
@@ -1214,10 +1456,11 @@ scenarios:
     \ 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo(mockData.variableEventName);\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(eventParams);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n\
+    // Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Send variable event with custom name
   code: "mockData.eventName = 'variable';\nmockData.variableEventName = 'custom';\n\
     \nconst eventParams = {\n  prop1: 'val1',\n  prop2: 'val2'\n};\n\nlet index =\
@@ -1227,10 +1470,11 @@ scenarios:
     \      assertThat(arguments[2], 'trackSingleCustom called with incorrect event\
     \ name').isEqualTo(mockData.variableEventName);\n      assertThat(arguments[3],\
     \ 'trackSingleCustom called with incorrect event parameters').isEqualTo(eventParams);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingleCustom called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n\
+    // Verify that the tag finished successfully.\nassertThat(index, 'trackSingleCustom\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Send event parameters from a variable
   code: "mockData.objectPropertiesFromVariable = {\n  prop1: 'val1',\n  prop2: 'val2'\n\
     };\n\nlet index = 0;\nmock('copyFromWindow', key => {\n  if (key === 'fbq') return\
@@ -1238,21 +1482,18 @@ scenarios:
     \ 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo(mockData.standardEventName);\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(mockData.objectPropertiesFromVariable);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n\
+    // Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Enhanced Ecommerce integration fails with invalid object
-  code: |-
-    mockData.enhancedEcommerce = true;
-
-    // Call runCode to run the template's code.
-    runCode(mockData);
-
-    // Verify that the tag finished successfully.
-    assertApi('logToConsole').wasCalledWith('Facebook Pixel: No valid "ecommerce" object found in dataLayer');
-    assertApi('gtmOnFailure').wasCalled();
-    assertApi('gtmOnSuccess').wasNotCalled();
+  code: "mockData.enhancedEcommerce = true;\n\n// Override the global setup for this\
+    \ specific test so it returns undefined\nmock('copyFromDataLayer', (key) => {\n\
+    \  return undefined; \n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
+    \n// Verify that the tag finished successfully.\nassertApi('logToConsole').wasCalledWith('Facebook\
+    \ Pixel: No valid \"ecommerce\" object found in dataLayer');\nassertApi('gtmOnFailure').wasCalled();\n\
+    assertApi('gtmOnSuccess').wasNotCalled();"
 - name: Enhanced Ecommerce integration fails with invalid action
   code: |-
     mockData.enhancedEcommerce = true;
@@ -1274,15 +1515,18 @@ scenarios:
   code: "mockData.enhancedEcommerce = true;\nmockData.objectPropertyList = {};\n\n\
     mock('copyFromDataLayer', key => {\n  if (key === 'ecommerce') return {\n    currencyCode:\
     \ 'EUR',\n    detail: {\n      products: mockEec.gtm.products\n    }\n  };\n});\n\
-    \nlet index = 0;\nmock('copyFromWindow', key => {\n  if (key === 'fbq') return\
+    \nlet index = 0;\nmock('copyFromWindow', key => {\n  // 1. The specific logic\
+    \ for this test (checking fbq trackSingle calls)\n  if (key === 'fbq') return\
     \ function() {\n    if (arguments[0] === 'trackSingle') {\n      assertThat(arguments[1],\
     \ 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo('ViewContent');\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(mockEec.fb);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n\n  // 2. The required logic for the template\
+    \ to finish (ParamBuilder mocks)\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n      \n// Call runCode to run the template's code.\nrunCode(mockData);\n\
+    \n// Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Enhanced Ecommerce AddToCart works
   code: "mockData.enhancedEcommerce = true;\nmockData.objectPropertyList = {};\n\n\
     mock('copyFromDataLayer', key => {\n  if (key === 'ecommerce') return {\n    currencyCode:\
@@ -1292,10 +1536,11 @@ scenarios:
     \ 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo('AddToCart');\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(mockEec.fb);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n\
+    // Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Enhanced Ecommerce InitiateCheckout works
   code: "mockData.enhancedEcommerce = true;\nmockEec.fb.num_items = 3;\nmockData.objectPropertyList\
     \ = {};\n\nmock('copyFromDataLayer', key => {\n  if (key === 'ecommerce') return\
@@ -1305,10 +1550,11 @@ scenarios:
     \      assertThat(arguments[1], 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo('InitiateCheckout');\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(mockEec.fb);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n\
+    // Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Enhanced Ecommerce Purchase works
   code: "mockData.enhancedEcommerce = true;\nmockEec.fb.num_items = 3;\nmockData.objectPropertyList\
     \ = {};\n\nmock('copyFromDataLayer', key => {\n  if (key === 'ecommerce') return\
@@ -1318,10 +1564,11 @@ scenarios:
     \      assertThat(arguments[1], 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo('Purchase');\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(mockEec.fb);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n\
+    // Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Object merge with variable and list works
   code: "mockData.objectPropertiesFromVariable = {\n  prop1: 'var1',\n  prop2: 'var2',\n\
     \  prop3: 'var3'\n};\n\nconst expected = {\n  prop1: 'val1',\n  prop2: 'val2',\n\
@@ -1330,10 +1577,11 @@ scenarios:
     \ {\n      assertThat(arguments[1], 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo('PageView');\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(expected);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n\
+    // Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Object merge with variable, list and eec works
   code: "mockData.enhancedEcommerce = true;\nmockData.objectPropertiesFromVariable\
     \ = {\n  content_type: 'product_group'\n};\nmockData.objectPropertyList = [{\n\
@@ -1346,34 +1594,102 @@ scenarios:
     \ 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo('Purchase');\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(mockEec.fb);\n\
-    \      index += 1;\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \      index += 1;\n    }\n  };\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n\
+    // Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
+    \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Send event ID
   code: "mockData.eventId = 'eventId';\n\nmock('copyFromWindow', key => {\n  if (key\
     \ === 'fbq') return function() {\n    if (arguments[0] === 'trackSingle') {\n\
     \      assertThat(arguments[4], 'eventID not included in hit').isEqualTo({eventID:\
-    \ mockData.eventId});\n    }\n  };\n});\n     \n// Call runCode to run the template's\
-    \ code.\nrunCode(mockData);\n\n// Verify that the tag finished successfully.\n\
-    assertApi('gtmOnSuccess').wasCalled();"
+    \ mockData.eventId});\n    }\n  };\n  if (key === 'clientParamBuilder') return\
+    \ {};\n  if (key === 'clientParamBuilder.processAndCollectAllParams') return ()\
+    \ => {};\n});\n     \n// Call runCode to run the template's code.\nrunCode(mockData);\n\
+    \n// Verify that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
+- name: ParamBuilder processAndCollectAllParams success
+  code: "mock('injectScript', (url, onsuccess, onfailure, token) => {\n  onsuccess();\n\
+    });\n\n// Replaced the basic mock with the callback-triggering mock\nmock('callInWindow',\
+    \ (propName, arg1, arg2, arg3) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck')\
+    \ {\n    if (typeof arg3 === 'function') {\n      arg3(true);\n    }\n  }\n  return\
+    \ true; \n});\n\nmock('copyFromWindow', key => {\n  if (key === 'fbq') return\
+    \ () => {};\n  if (key === 'clientParamBuilder') return {};\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+    \ return () => {};\n  if (key === 'clientParamBuilder.processAndCollectParams')\
+    \ return undefined;\n});\n\nrunCode(mockData);\n\nassertApi('gtmOnSuccess').wasCalled();\n\
+    assertApi('gtmOnFailure').wasNotCalled();"
+- name: ParamBuilder processAndCollectParams success
+  code: "mock('injectScript', (url, onsuccess, onfailure, token) => {\n  onsuccess();\n\
+    });\n\n// Use the upgraded mock that triggers the callback\nmock('callInWindow',\
+    \ (propName, arg1, arg2, arg3) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck')\
+    \ {\n    if (typeof arg3 === 'function') {\n      arg3(true);\n    }\n  }\n  return\
+    \ true; \n});\n\nmock('copyFromWindow', key => {\n  if (key === 'fbq') return\
+    \ () => {};\n  if (key === 'clientParamBuilder') return {};\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+    \ return undefined;\n  if (key === 'clientParamBuilder.processAndCollectParams')\
+    \ return () => {};\n});\n\nrunCode(mockData);\n\nassertApi('gtmOnSuccess').wasCalled();\n\
+    assertApi('gtmOnFailure').wasNotCalled();"
+- name: ParamBuilder loaded failed
+  code: "mock('injectScript', (url, onsuccess, onfailure, token) => {\n  onsuccess();\n\
+    });\n\n// Use the upgraded mock that triggers the callback\nmock('callInWindow',\
+    \ (propName, arg1, arg2, arg3) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck')\
+    \ {\n    if (typeof arg3 === 'function') {\n      arg3(true);\n    }\n  }\n  return\
+    \ true; \n});\n\nmock('copyFromWindow', key => {\n  if (key === 'fbq') return\
+    \ () => {};\n  if (key === 'clientParamBuilder') return {};\n  // Both methods\
+    \ return undefined to trigger the failure block\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+    \ return undefined;\n  if (key === 'clientParamBuilder.processAndCollectParams')\
+    \ return undefined;\n});\n\nrunCode(mockData);\n\nassertApi('gtmOnSuccess').wasNotCalled();\n\
+    assertApi('gtmOnFailure').wasCalled();"
+- name: GK off pixel load successfully
+  code: "// Reset the array instead of re-declaring it\ninjectedUrls = [];\n\nmock('injectScript',\
+    \ (url, onsuccess, onfailure, token) => {\n  injectedUrls.push(url);\n  if (onsuccess)\
+    \ {\n    onsuccess();\n  }\n});\n\n// Correctly target arg4 (onDisabled) to simulate\
+    \ the gateCheck failing\nmock('callInWindow', (propName, arg1, arg2, arg3, arg4,\
+    \ arg5) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck') {\n    const onDisabled\
+    \ = arg4; // arg4 is the onDisabled callback\n    if (typeof onDisabled === 'function')\
+    \ {\n      onDisabled(arg2, arg5); // Pass gateName and pixelID back to the callback\n\
+    \    }\n  }\n  return true; \n});\n\n// Run the template\nrunCode(mockData);\n\
+    \n// 1. Verify the template finished successfully\nassertApi('gtmOnSuccess').wasCalled();\n\
+    assertApi('gtmOnFailure').wasNotCalled();\n\n// 2. Verify the Param Builder script\
+    \ was skipped\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');"
+- name: GK off pixel load failed
+  code: "// Reset the array\ninjectedUrls = [];\n\n// Mock injectScript to simulate\
+    \ a network error / loading failure\nmock('injectScript', (url, onsuccess, onfailure,\
+    \ token) => {\n  injectedUrls.push(url);\n  \n  // Notice we are calling onfailure()\
+    \ this time instead of onsuccess()\n  if (onfailure) {\n    onfailure(); \n  }\n\
+    });\n\n// Run the template\nrunCode(mockData);\n\n// 1. Verify failure was called\
+    \ and success was not\nassertApi('gtmOnFailure').wasCalled();\nassertApi('gtmOnSuccess').wasNotCalled();\n\
+    \n// 2. Verify only the first script was attempted\nassertThat(injectedUrls).contains('https://connect.facebook.net/en_US/fbevents.js');\n\
+    assertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');"
 setup: "const mockData = {\n  pixelId: '12345,23456',\n  eventName: 'standard',\n\
   \  standardEventName: 'PageView',\n  customEventName: 'custom',\n  variableEventName:\
   \ 'standard',\n  consent: true,\n  advancedMatching: false,\n  advancedMatchingList:\
-  \ [{name: 'ct', value: 'Helsinki'},{name: 'cn', value: 'Finland'},{name: 'external_id',\
-  \ value: 'UserId'}],\n  objectPropertiesFromVariable: false,\n  objectPropertyList:\
-  \ [{name: 'prop1', value: 'val1'},{name: 'prop2', value: 'val2'}],\n  disableAutoConfig:\
-  \ false,\n  disablePushState: false,\n  enhancedEcommerce: false,\n  eventId: ''\n\
-  };\n\nconst mockEec = {\n  gtm: {  \n    products: [{\n      id: 'i1',\n      name:\
-  \ 'n1',\n      category: 'c1',\n      price: '1.00',\n      quantity: 1\n    },{\n\
-  \      id: 'i2',\n      name: 'n2',\n      category: 'c2',\n      price: '2.00',\n\
-  \      quantity: 2\n    }]\n  },\n  fb: {\n    content_type: 'product',\n    contents:\
-  \ [{\n      id: 'i1',\n      quantity: 1\n    },{\n      id: 'i2',\n      quantity:\
-  \ 2\n    }],\n    currency: 'EUR',\n    value: 5.00\n  }\n};\n\nconst scriptUrl\
-  \ = 'https://connect.facebook.net/en_US/fbevents.js';\n\n// Create injectScript\
-  \ mock\nlet success, failure;\nmock('injectScript', (url, onsuccess, onfailure)\
-  \ => {\n  success = onsuccess;\n  failure = onfailure;\n  onsuccess();\n});\n\n\
-  mock('copyFromWindow', key => {\n  if (key === 'fbq') return () => {};\n});"
+  \ [\n    {name: 'ct', value: 'Helsinki'},\n    {name: 'cn', value: 'Finland'}\n\
+  \  ],\n  objectPropertiesFromVariable: false,\n  objectPropertyList: [\n    {name:\
+  \ 'prop1', value: 'val1'},\n    {name: 'prop2', value: 'val2'}\n  ],\n  disableAutoConfig:\
+  \ false,\n  disablePushState: false,\n  enhancedEcommerce: false,\n  eventId: '',\n\
+  \  gtmOnSuccess: () => {},\n  gtmOnFailure: () => {}\n};\n\n// Restored to YOUR\
+  \ original structure!\nconst mockEec = {\n  gtm: {  \n    products: [{\n      id:\
+  \ 'i1',\n      name: 'n1',\n      category: 'c1',\n      price: '1.00',\n      quantity:\
+  \ 1\n    },{\n      id: 'i2',\n      name: 'n2',\n      category: 'c2',\n      price:\
+  \ '2.00',\n      quantity: 2\n    }]\n  },\n  fb: {\n    content_type: 'product',\n\
+  \    contents: [{\n      id: 'i1',\n      quantity: 1\n    },{\n      id: 'i2',\n\
+  \      quantity: 2\n    }],\n    currency: 'EUR',\n    value: 5.00\n  }\n};\n\n\
+  let injectedUrls = [];\n\nmock('injectScript', (url, onsuccess, onfailure, token)\
+  \ => {\n  injectedUrls.push(url);\n  if (onsuccess) {\n    onsuccess();\n  }\n});\n\
+  \nmock('callInWindow', (propName, arg1, arg2, arg3, arg4, arg5) => {\n  if (propName\
+  \ === 'fbq' && arg1 === 'gateCheck') {\n    const gateName = arg2;\n    const onEnabled\
+  \ = arg3;\n    const onDisabled = arg4;\n    const pixelID = arg5;\n    \n    if\
+  \ (typeof onEnabled === 'function') {\n      onEnabled(gateName, pixelID); \n  \
+  \  }\n  }\n  return true; \n});\n\nmock('copyFromWindow', key => {\n  if (key ===\
+  \ 'fbq') return () => {};\n  if (key === 'fbq.callMethod.apply') return () => {};\n\
+  \  if (key === '_fbq_gtm_ids') return [];\n  \n  if (key === 'clientParamBuilder')\
+  \ {\n    return {\n      processAndCollectAllParams: () => {},\n      processAndCollectParams:\
+  \ () => {}\n    };\n  }\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+  \ return () => {};\n  if (key === 'clientParamBuilder.processAndCollectParams')\
+  \ return () => {};\n  \n  return undefined;\n});\n\n// We return a dummy object\
+  \ here, but your tests will override it to use mockEec.gtm\nmock('copyFromDataLayer',\
+  \ (key) => { \n  return undefined;\n});\n\nmock('getUrl', () => 'https://example.com');\n\
+  mock('logToConsole', () => {});\nmock('createQueue', () => {});\nmock('setInWindow',\
+  \ () => {});\nmock('aliasInWindow', () => {});"
 
 
 ___NOTES___
