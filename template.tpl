@@ -1,4 +1,4 @@
-﻿﻿﻿___TERMS_OF_SERVICE___
+﻿﻿﻿﻿﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -58,9 +58,31 @@ ___TEMPLATE_PARAMETERS___
   {
     "type": "CHECKBOX",
     "name": "enhancedEcommerce",
-    "checkboxText": "Enhanced Ecommerce dataLayer Integration",
+    "checkboxText": "(Deprecated) Leave this box unchecked and use the Ecommerce integration dropdown below instead.",
     "simpleValueType": true,
-    "help": "If you check this, then the Facebook pixel will populate \u003cstrong\u003eEvent Name\u003c/strong\u003e and \u003cstrong\u003eObject Properties\u003c/strong\u003e automatically from the last \u003ca href\u003d\"https://developers.google.com/tag-manager/enhanced-ecommerce\"\u003eecommerce\u003c/a\u003e object pushed into the dataLayer array."
+    "help": "This setting has been replaced by the \u003cstrong\u003eEcommerce Integration\u003c/strong\u003e dropdown. Please leave the box unchecked and select \u003cstrong\u003eUse Enhanced Ecommerce\u003c/strong\u003e from the dropdown below to continue using this setting."
+  },
+  {
+    "type": "SELECT",
+    "name": "ecommerceDataModel",
+    "displayName": "Ecommerce Integration",
+    "selectItems": [
+      {
+        "value": "useGA4Ecommerce",
+        "displayValue": "Use GA4 Ecommerce"
+      },
+      {
+        "value": "useEnhancedEcommerce",
+        "displayValue": "Use Enhanced Ecommerce"
+      },
+      {
+        "value": "none",
+        "displayValue": "None"
+      }
+    ],
+    "simpleValueType": true,
+    "defaultValue": "none",
+    "help": "\u003cstrong\u003eUse Enhanced Ecommerce:\u003c/strong\u003e\u003cbr/\u003eThe Facebook pixel will populate \u003cstrong\u003eEvent Name\u003c/strong\u003e and \u003cstrong\u003eObject Properties\u003c/strong\u003e automatically from the last \u003ca href\u003d\"https://developers.google.com/tag-manager/enhanced-ecommerce\"\u003eecommerce\u003c/a\u003e object pushed into the dataLayer array.\u003cbr/\u003e\u003cbr/\u003e\u003cstrong\u003eUse GA4 Ecommerce:\u003c/strong\u003e\u003cbr/\u003eIf this feature is enabled, please push an \u003cstrong\u003eeventModel\u003c/strong\u003e object containing the required parameters into the dataLayer.\n\u003cbr/\u003e\u003cbr/\u003e\nExample:\n\u003cbr/\u003e\n\u003ccode style\u003d\"font-family: monospace; display: block; background-color: #f4f4f4; padding: 15px; margin-top: 5px;\"\u003e\nwindow.dataLayer \u003d window.dataLayer || [];\u003cbr\u003e\nwindow.dataLayer.push({\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\"event\": \"add_to_cart\",\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\"eventModel\": {\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"currency\": \"USD\",\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"value\": 30,\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"items\": [\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;{\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"item_id\": \"item_id\",\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"item_name\": \"item_name\",\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"price\": 30\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;}\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;]\u003cbr\u003e\n\u0026nbsp;\u0026nbsp;}\u003cbr\u003e\n});\n\u003c/code\u003e"
   },
   {
     "type": "RADIO",
@@ -183,9 +205,22 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true,
     "enablingConditions": [
       {
-        "paramName": "enhancedEcommerce",
-        "paramValue": true,
-        "type": "NOT_EQUALS"
+        "paramName": "ecommerceDataModel",
+        "paramValue": "none",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
+    "name": "ga4EventName",
+    "displayName": "GA4 Event Name",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "ecommerceDataModel",
+        "paramValue": "useGA4Ecommerce",
+        "type": "EQUALS"
       }
     ]
   },
@@ -203,8 +238,13 @@ ___TEMPLATE_PARAMETERS___
     "help": "The Enhanced Ecommerce integration populates the Event Name automatically depending on what type of \u003cstrong\u003eecommerce\u003c/strong\u003e object was last pushed into dataLayer (\"detail\" -\u003e \"ViewContent\", \"add\" -\u003e \"AddToCart\", \"checkout\" -\u003e \"InitiateCheckout\", \"purchase\" -\u003e \"Purchase\").",
     "enablingConditions": [
       {
-        "paramName": "enhancedEcommerce",
-        "paramValue": true,
+        "paramName": "ecommerceDataModel",
+        "paramValue": "useEnhancedEcommerce",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "ecommerceDataModel",
+        "paramValue": "useGA4Ecommerce",
         "type": "EQUALS"
       }
     ]
@@ -389,8 +429,8 @@ ___TEMPLATE_PARAMETERS___
         "displayName": "\u003cstrong\u003eWarning!\u003c/strong\u003e Object properties are populated automatically based on the most recent \u003cstrong\u003eecommerce\u003c/strong\u003e object pushed into dataLayer. If you add properties here that are already set by the integration (content_type, contents, num_items, value, currency), then the properties you add here will override those set automatically by the integration!",
         "enablingConditions": [
           {
-            "paramName": "enhancedEcommerce",
-            "paramValue": true,
+            "paramName": "ecommerceDataModel",
+            "paramValue": "useEnhancedEcommerce",
             "type": "EQUALS"
           }
         ]
@@ -486,6 +526,7 @@ const initIds = copyFromWindow('_fbq_gtm_ids') || [];
 const pixelIds = data.pixelId;
 const standardEventNames = ['AddPaymentInfo', 'AddToCart', 'AddToWishlist', 'CompleteRegistration', 'Contact', 'CustomizeProduct', 'Donate', 'FindLocation', 'InitiateCheckout', 'Lead', 'PageView', 'Purchase', 'Schedule', 'Search', 'StartTrial', 'SubmitApplication', 'Subscribe', 'ViewContent'];
 const ecommerce = copyFromDataLayer('ecommerce', 1);
+const eventModel = copyFromDataLayer('eventModel', 1);
 
 // Helper methods
 const fail = msg => {
@@ -511,7 +552,8 @@ const parseEecObj = prod => {
 
 // Initialize EEC integration
 let eventName, action, eecObjectProps;
-if (data.enhancedEcommerce) {
+let customData = {};
+if (data.enhancedEcommerce || data.ecommerceDataModel === 'useEnhancedEcommerce') {
   if (!ecommerce) return fail('Facebook Pixel: No valid "ecommerce" object found in dataLayer');
   if (ecommerce.detail) { eventName = 'ViewContent'; action = 'detail'; }
   else if (ecommerce.add) { eventName = 'AddToCart'; action = 'add'; }
@@ -534,20 +576,16 @@ if (data.enhancedEcommerce) {
   }, 0);
 }
 
-// Build the fbq() command arguments
+// Prepare event variables
 const cidParams = data.advancedMatchingList && data.advancedMatchingList.length ? makeTableMap(data.advancedMatchingList, 'name', 'value') : {};
 const objectProps = data.objectPropertyList && data.objectPropertyList.length ? makeTableMap(data.objectPropertyList, 'name', 'value') : {};
 const objectPropsFromVar = getType(data.objectPropertiesFromVariable) === 'object' ? data.objectPropertiesFromVariable : {};
-const mergedObjectProps = mergeObj(objectPropsFromVar, objectProps);
-const finalObjectProps = mergeObj(eecObjectProps || {}, mergedObjectProps);
-eventName = eventName || (data.eventName === 'custom' ? data.customEventName : (data.eventName === 'variable' ? data.variableEventName : data.standardEventName));
 
+eventName = eventName || (data.eventName === 'custom' ? data.customEventName : (data.eventName === 'variable' ? data.variableEventName : data.standardEventName));
 const command = standardEventNames.indexOf(eventName) === -1 ? 'trackSingleCustom' : 'trackSingle';
 const consent = data.consent === false ? 'revoke' : 'grant';
 
-// Utility function to use either fbq.queue[]
-// (if the FB SDK hasn't loaded yet), or fbq.callMethod()
-// if the SDK has loaded.
+// Utility function to get fbq
 const getFbq = () => {
   // Return the existing 'fbq' global method if available
   let fbq = copyFromWindow('fbq');
@@ -599,27 +637,71 @@ pixelIds.split(',').forEach(pixelId => {
       setInWindow('fbq.disablePushState', true);
     }
 
-
     // Initialize pixel and store in global array
     fbq('init', pixelId, cidParams);
 
-    // Monitoring agent string for Tag Setup
-    fbq('set','agent','tmSimo-GTM-WebTemplate-2.0.0', pixelId);
+    const isEEC = data.enhancedEcommerce || data.ecommerceDataModel === 'useEnhancedEcommerce';
+    const isGA4 = data.ecommerceDataModel === 'useGA4Ecommerce';
+    // Determine the correct suffix, defaulting to an empty string
+    const suffix = isEEC ? '-EEC' : (isGA4 ? '-GA4' : '');
+    const agentString = 'tmSimo-GTM-WebTemplate-2.0.0' + suffix;
+    fbq('set', 'agent', agentString, pixelId);
 
     initIds.push(pixelId);
     setInWindow('_fbq_gtm_ids', initIds, true);
-
-  }
-
-  // Call the fbq() method with the parameters defined earlier
-  if (data.eventId) {
-    fbq(command, pixelId, eventName, finalObjectProps, {eventID: data.eventId});
-  } else {
-    fbq(command, pixelId, eventName, finalObjectProps);
   }
 });
 
-// Inject Param Builder script if enabled
+const fireEvent = (resolvedCustomData) => {
+  const customProps = mergeObj(resolvedCustomData, eecObjectProps || {});
+  const mergedObjectProps = mergeObj(objectPropsFromVar, objectProps);
+  const finalObjectProps = mergeObj(customProps, mergedObjectProps);
+
+  pixelIds.split(',').forEach(pixelId => {
+    if (data.eventId) {
+      fbq(command, pixelId, eventName, finalObjectProps, {eventID: data.eventId});
+    } else {
+      fbq(command, pixelId, eventName, finalObjectProps);
+    }
+  });
+};
+
+if (data.ecommerceDataModel === 'useGA4Ecommerce') {
+  const firstPixelId = pixelIds.split(',')[0];
+  callInWindow(
+    'fbq',
+    'gateCheck',
+    'enable_gtm_ga4_structure',
+    function(gateName, pixelID) {
+      // onEnabled callback - wait to process and then fire
+      eventName = data.ga4EventName ? data.ga4EventName : (eventModel.eventName ? eventModel.eventName : eventName);
+      if(eventModel.currency) customData.currency = eventModel.currency;
+      if(eventModel.value) customData.value = eventModel.value;
+      if(eventModel.transaction_id) customData.transaction_id = eventModel.transaction_id;
+      if(eventModel.user_data) customData.user_data = eventModel.user_data;
+      if(eventModel.items && getType(eventModel.items) === 'array') {
+        customData.contents = eventModel.items.map(item => {
+          return {
+            "id": (item.item_id || item.item_name) || undefined,
+            "item_price": item.price || undefined,
+            "quantity": item.quantity || undefined
+          };
+        });
+      }
+
+      fireEvent(customData);
+    },
+    function(gateName, pixelID) {
+      // onDisabled callback - fire immediately without GA4 mapping
+      fireEvent(customData);
+    },
+    firstPixelId
+  );
+} else {
+  // Fire immediately if GA4 mapping isn't enabled
+  fireEvent(customData);
+}
+
 const onParamBuilderFailure = () => {
   log('Facebook Pixel: Failed to load clientParamBuilder script');
 };
@@ -1180,6 +1262,9 @@ ___WEB_PERMISSIONS___
         }
       ]
     },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
     "isRequired": true
   },
   {
@@ -1204,6 +1289,10 @@ ___WEB_PERMISSIONS___
               {
                 "type": 1,
                 "string": "ecommerce"
+              },
+              {
+                "type": 1,
+                "string": "eventModel"
               }
             ]
           }
@@ -1237,6 +1326,9 @@ ___WEB_PERMISSIONS___
           }
         }
       ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
     },
     "isRequired": true
   }
@@ -1362,7 +1454,6 @@ scenarios:
 - name: DPO LDU not set
   code: |-
     mock('copyFromWindow', key => {
-      // 1. The specific logic for this test (checking fbq consent and ensuring DPO is NOT called)
       if (key === 'fbq') return function() {
         if (arguments[0] === 'consent') {
           assertThat(arguments[1], 'Consent set incorrectly').isEqualTo('grant');
@@ -1372,7 +1463,6 @@ scenarios:
         }
       };
 
-      // 2. The required logic for the template to finish (ParamBuilder mocks)
       if (key === 'clientParamBuilder') return {};
       if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
     });
@@ -1406,31 +1496,26 @@ scenarios:
     \n\n\nmock('copyFromDataLayer', key => {\n\n  if (key === 'ecommerce') return\
     \ {\n\n    currencyCode: 'EUR',\n\n    detail: {\n\n      products: mockEec.gtm.products\n\
     \n    }\n\n  };\n\n});\n\n\n\nlet index = 0;\n\nmock('copyFromWindow', key =>\
-    \ {\n\n  // 1. The specific logic for this test (checking fbq trackSingle calls)\n\
-    \n  if (key === 'fbq') return function() {\n\n    if (arguments[0] === 'trackSingle')\
+    \ {\n\n  if (key === 'fbq') return function() {\n\n    if (arguments[0] === 'trackSingle')\
     \ {\n\n      assertThat(arguments[1], 'trackSingle called with incorrect pixel\
     \ ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\n      assertThat(arguments[2],\
     \ 'trackSingle called with incorrect event name').isEqualTo('ViewContent');\n\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(mockEec.fb);\n\
-    \n      index += 1;\n\n    }\n\n  };\n\n\n\n  // 2. The required logic for the\
-    \ template to finish (ParamBuilder mocks)\n\n  if (key === 'clientParamBuilder')\
+    \n      index += 1;\n\n    }\n\n  };\n\n\n\n\n  if (key === 'clientParamBuilder')\
     \ return {};\n\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
     \ return () => {};\n\n});\n\n      \n\n// Call runCode to run the template's code.\n\
-    \nrunCode(mockData);\n\n\n\n// Verify that the tag finished successfully.\n\n\
-    assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
-    \nassertApi('gtmOnSuccess').wasCalled();"
+    \nrunCode(mockData);\n\n\nassertThat(index, 'trackSingle called incorrect number\
+    \ of times').isEqualTo(2);\n\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Send standard event
   code: "const eventParams = {\n  prop1: 'val1',\n  prop2: 'val2'\n};\n\nlet index\
-    \ = 0;\nmock('copyFromWindow', key => {\n  // 1. The specific logic for this test\
-    \ (checking fbq trackSingle calls)\n  if (key === 'fbq') return function() {\n\
-    \    if (arguments[0] === 'trackSingle') {\n      assertThat(arguments[1], 'trackSingle\
-    \ called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
+    \ = 0;\nmock('copyFromWindow', key => {\n  if (key === 'fbq') return function()\
+    \ {\n    if (arguments[0] === 'trackSingle') {\n      assertThat(arguments[1],\
+    \ 'trackSingle called with incorrect pixel ID').isEqualTo(mockData.pixelId.split(',')[index]);\n\
     \      assertThat(arguments[2], 'trackSingle called with incorrect event name').isEqualTo(mockData.standardEventName);\n\
     \      assertThat(arguments[3], 'trackSingle called with incorrect event parameters').isEqualTo(eventParams);\n\
-    \      index += 1;\n    }\n  };\n\n  // 2. The required logic for the template\
-    \ to finish (ParamBuilder mocks)\n  if (key === 'clientParamBuilder') return {};\n\
-    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
-    });\n      \n// Call runCode to run the template's code.\nrunCode(mockData);\n\
+    \      index += 1;\n    }\n  };\n\n  if (key === 'clientParamBuilder') return\
+    \ {};\n  if (key === 'clientParamBuilder.processAndCollectAllParams') return ()\
+    \ => {};\n});\n      \n// Call runCode to run the template's code.\nrunCode(mockData);\n\
     \n// Verify that the tag finished successfully.\nassertThat(index, 'trackSingle\
     \ called incorrect number of times').isEqualTo(2);\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Send custom event
@@ -1641,55 +1726,273 @@ scenarios:
 - name: GK off pixel load successfully
   code: "// Reset the array instead of re-declaring it\ninjectedUrls = [];\n\nmock('injectScript',\
     \ (url, onsuccess, onfailure, token) => {\n  injectedUrls.push(url);\n  if (onsuccess)\
-    \ {\n    onsuccess();\n  }\n});\n\n// Correctly target arg4 (onDisabled) to simulate\
-    \ the gateCheck failing\nmock('callInWindow', (propName, arg1, arg2, arg3, arg4,\
-    \ arg5) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck') {\n    const onDisabled\
-    \ = arg4; // arg4 is the onDisabled callback\n    if (typeof onDisabled === 'function')\
-    \ {\n      onDisabled(arg2, arg5); // Pass gateName and pixelID back to the callback\n\
-    \    }\n  }\n  return true; \n});\n\n// Run the template\nrunCode(mockData);\n\
-    \n// 1. Verify the template finished successfully\nassertApi('gtmOnSuccess').wasCalled();\n\
-    assertApi('gtmOnFailure').wasNotCalled();\n\n// 2. Verify the Param Builder script\
-    \ was skipped\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');"
+    \ {\n    onsuccess();\n  }\n});\n\nmock('callInWindow', (propName, arg1, arg2,\
+    \ arg3, arg4, arg5) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck') {\n\
+    \    const onDisabled = arg4;\n    if (typeof onDisabled === 'function') {\n \
+    \     onDisabled(arg2, arg5);\n    }\n  }\n  return true; \n});\n\n// Run the\
+    \ template\nrunCode(mockData);\n\n// 1. Verify the template finished successfully\n\
+    assertApi('gtmOnSuccess').wasCalled();\nassertApi('gtmOnFailure').wasNotCalled();\n\
+    \n// 2. Verify the Param Builder script was skipped\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');"
 - name: GK off pixel load failed
-  code: "// Reset the array\ninjectedUrls = [];\n\n// Mock injectScript to simulate\
-    \ a network error / loading failure\nmock('injectScript', (url, onsuccess, onfailure,\
-    \ token) => {\n  injectedUrls.push(url);\n  \n  // Notice we are calling onfailure()\
-    \ this time instead of onsuccess()\n  if (onfailure) {\n    onfailure(); \n  }\n\
-    });\n\n// Run the template\nrunCode(mockData);\n\n// 1. Verify failure was called\
-    \ and success was not\nassertApi('gtmOnFailure').wasCalled();\nassertApi('gtmOnSuccess').wasNotCalled();\n\
-    \n// 2. Verify only the first script was attempted\nassertThat(injectedUrls).contains('https://connect.facebook.net/en_US/fbevents.js');\n\
+  code: "injectedUrls = [];\n\nmock('injectScript', (url, onsuccess, onfailure, token)\
+    \ => {\n  injectedUrls.push(url);\n  \n  if (onfailure) {\n    onfailure(); \n\
+    \  }\n});\n\n// Run the template\nrunCode(mockData);\n\nassertApi('gtmOnFailure').wasCalled();\n\
+    assertApi('gtmOnSuccess').wasNotCalled();\n\nassertThat(injectedUrls).contains('https://connect.facebook.net/en_US/fbevents.js');\n\
     assertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');"
+- name: Custom data extraction from eventModel
+  code: "const testData = {\n  pixelId: '12345,23456',\n  eventName: 'standard',\n\
+    \  standardEventName: 'PageView',\n  customEventName: 'custom',\n  variableEventName:\
+    \ 'standard',\n  consent: true,\n  advancedMatching: false,\n  advancedMatchingList:\
+    \ [\n    {name: 'ct', value: 'Helsinki'},\n    {name: 'cn', value: 'Finland'},\n\
+    \    {name: 'external_id', value: 'UserId'}\n  ],\n  objectPropertiesFromVariable:\
+    \ false,\n  objectPropertyList: [\n    {name: 'prop1', value: 'val1'},\n    {name:\
+    \ 'prop2', value: 'val2'}\n  ],\n  disableAutoConfig: false,\n  disablePushState:\
+    \ false,\n  enhancedEcommerce: false,\n  eventId: '',\n  gtmOnSuccess: () => {},\n\
+    \  gtmOnFailure: () => {}\n};\n\n// Renamed from mockEec to testEec\nconst testEec\
+    \ = {\n  gtm: {  \n    products: [{\n      id: 'i1',\n      name: 'n1',\n    \
+    \  category: 'c1',\n      price: '1.00',\n      quantity: 1\n    },{\n      id:\
+    \ 'i2',\n      name: 'n2',\n      category: 'c2',\n      price: '2.00',\n    \
+    \  quantity: 2\n    }]\n  },\n  fb: {\n    content_type: 'product',\n    contents:\
+    \ [{\n      id: 'i1',\n      quantity: 1\n    },{\n      id: 'i2',\n      quantity:\
+    \ 2\n    }],\n    currency: 'EUR',\n    value: 5.00\n  }\n};\n\ninjectedUrls =\
+    \ [];\n\nmock('injectScript', (url, onsuccess, onfailure, token) => {\n  injectedUrls.push(url);\n\
+    \  if (onsuccess) {\n    onsuccess();\n  }\n});\n\nmock('callInWindow', (propName,\
+    \ arg1, arg2, arg3, arg4, arg5) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck')\
+    \ {\n    const gateName = arg2;\n    const onEnabled = arg3;\n    const onDisabled\
+    \ = arg4;\n    const pixelID = arg5;\n    \n    if (typeof onEnabled === 'function')\
+    \ {\n      onEnabled(gateName, pixelID); \n    }\n  }\n  return true; \n});\n\n\
+    mock('copyFromWindow', key => {\n  if (key === 'fbq') return () => {};\n  if (key\
+    \ === 'fbq.callMethod.apply') return () => {};\n  if (key === '_fbq_gtm_ids')\
+    \ return [];\n  \n  if (key === 'clientParamBuilder') {\n    return {\n      processAndCollectAllParams:\
+    \ () => {},\n      processAndCollectParams: () => {}\n    };\n  }\n  if (key ===\
+    \ 'clientParamBuilder.processAndCollectAllParams') return () => {};\n  if (key\
+    \ === 'clientParamBuilder.processAndCollectParams') return () => {};\n  \n  return\
+    \ undefined;\n});\n\n// We return a dummy object here, but your tests will override\
+    \ it to use testEec.gtm\nmock('copyFromDataLayer', (key) => { \n  return undefined;\n\
+    });\n\nmock('getUrl', () => 'https://example.com');\nmock('logToConsole', () =>\
+    \ {});\nmock('createQueue', () => {});\nmock('setInWindow', () => {});\nmock('aliasInWindow',\
+    \ () => {});\n\n// Run code with the new testData variable\nrunCode(testData);"
+- name: Custom data extraction from ecommerce
+  code: "injectedUrls = [];\n\nmock('injectScript', (url, onsuccess) => {\n  injectedUrls.push(url);\n\
+    \  if (onsuccess) onsuccess();\n});\n\nmock('callInWindow', (propName, arg1, arg2,\
+    \ arg3) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck' && typeof arg3\
+    \ === 'function') {\n    arg3(true);\n  }\n  return true; \n});\n\nmock('copyFromDataLayer',\
+    \ key => {\n  if (key === 'ecommerce') return {\n    currencyCode: 'EUR',\n  \
+    \  purchase: {\n      actionField: { id: 'T12345' },\n      products: [\n    \
+    \    { id: 'sku1', price: '10.50', quantity: 2 },\n        { id: 'sku2', price:\
+    \ '5.00', quantity: 1 }\n      ]\n    }\n  };\n  if (key === 'eventModel') return\
+    \ undefined; \n});\n\nlet capturedEventName;\nlet capturedProps;\n\nmock('copyFromWindow',\
+    \ key => {\n  if (key === 'fbq') return function() {\n    if (arguments[0] ===\
+    \ 'trackSingle') {\n      capturedEventName = arguments[2];\n      capturedProps\
+    \ = arguments[3]; \n    }\n  };\n  if (key === 'clientParamBuilder') return {};\n\
+    \  if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};\n\
+    });\n\nmockData.enhancedEcommerce = true;\n\nrunCode(mockData);\n\nassertThat(capturedEventName,\
+    \ 'Event name not mapped').isEqualTo('Purchase');\n\nassertThat(capturedProps.content_type,\
+    \ 'content_type missing').isEqualTo('product');\nassertThat(capturedProps.currency,\
+    \ 'currency not extracted').isEqualTo('EUR');\n\nassertThat(capturedProps.contents,\
+    \ 'contents not mapped').isEqualTo([\n  {id: 'sku1', quantity: 2}, \n  {id: 'sku2',\
+    \ quantity: 1}\n]);\n\nassertThat(capturedProps.value, 'Total value is wrong').isEqualTo(26.00);\n\
+    assertThat(capturedProps.num_items, 'Total item count is wrong').isEqualTo(3);\n\
+    \nassertApi('gtmOnSuccess').wasCalled();"
+- name: Send event ID with ecommerce data
+  code: "injectedUrls = [];\nmock('injectScript', (url, onsuccess) => {\n  injectedUrls.push(url);\n\
+    \  if (onsuccess) onsuccess();\n});\n\nmock('callInWindow', (propName, arg1, arg2,\
+    \ arg3) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck' && typeof arg3\
+    \ === 'function') {\n    arg3(arg2, '12345'); \n  }\n  return true; \n});\n\n\
+    // Setup the test data\nmockData.eventId = 'evt_12345_unique';\nmockData.enhancedEcommerce\
+    \ = false; \nmockData.ecommerceDataModel = 'useGA4Ecommerce';\n\nmock('copyFromDataLayer',\
+    \ key => {\n  if (key === 'eventModel') return {\n    currency: 'EUR',\n    items:\
+    \ [{id: 'prod1', quantity: 1}],\n    transaction_id: 'txn_789',\n    value: 50.00\n\
+    \  };\n  return undefined;\n});\n\nlet capturedEventId;\nlet capturedProps = {};\
+    \ \nmock('copyFromWindow', key => {\n  if (key === 'fbq') return function() {\n\
+    \    if (arguments[0] === 'trackSingle' || arguments[0] === 'trackSingleCustom')\
+    \ {\n      capturedProps = arguments[3] || {};\n      capturedEventId = arguments[4];\n\
+    \    }\n  };\n  if (key === 'clientParamBuilder') return {};\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+    \ return () => {};\n  return undefined;\n});\n\nrunCode(mockData);\n\n// Assertions\n\
+    assertThat(capturedEventId, 'eventID not set correctly').isEqualTo({eventID: 'evt_12345_unique'});\n\
+    assertThat(capturedProps.currency, 'currency missing').isEqualTo('EUR');\n\nassertThat(capturedProps.transaction_id,\
+    \ 'transaction_id missing').isEqualTo('txn_789');\n\nassertApi('gtmOnSuccess').wasCalled();"
+- name: Unmapped event names pass through unchanged
+  code: |-
+    mockData.eventName = 'variable';
+    mockData.variableEventName = 'my_custom_event';
+
+    let capturedEventName;
+    let capturedCommand;
+    mock('copyFromWindow', key => {
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'trackSingleCustom') {
+          capturedCommand = arguments[0];
+          capturedEventName = arguments[2];
+        }
+      };
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+    });
+
+    runCode(mockData);
+
+    assertThat(capturedCommand, 'Should use trackSingleCustom for unmapped events').isEqualTo('trackSingleCustom');
+    assertThat(capturedEventName, 'Unmapped event should pass through unchanged').isEqualTo('my_custom_event');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Should map GA4 eventModel to tracking payload when gate is enabled
+  code: "// 1. GUARANTEE the template routes to the GA4 block\nmockData.ecommerceDataModel\
+    \ = 'useGA4Ecommerce'; \nmockData.enhancedEcommerce = false;\n\nconst ga4Data\
+    \ = {\n  currency:  'EUR',\n  value: 42.50,\n  transaction_id: 'T_12345',\n  items:\
+    \ [{ item_id: 'SKU_1', quantity: 1, price: 10.00 }],\n  user_data: { email: 'test@example.com'\
+    \ }\n};\n\n// 2. Mock copyFromDataLayer specifically for this test\nmock('copyFromDataLayer',\
+    \ (key) => {\n  if (key === 'eventModel') return ga4Data;\n  return undefined;\n\
+    });\n\n// 3. Track the arguments passed to fbq calls\nlet fbqCalls = [];\n\n//\
+    \ 4. Update copyFromWindow to intercept fbq calls directly\nmock('copyFromWindow',\
+    \ key => {\n  if (key === 'fbq') {\n    return function(cmd, p1, p2, p3, p4) {\n\
+    \      fbqCalls.push([cmd, p1, p2, p3, p4]);\n    };\n  }\n  if (key === 'fbq.callMethod.apply')\
+    \ return () => {};\n  if (key === '_fbq_gtm_ids') return [];\n  if (key === 'clientParamBuilder')\
+    \ {\n    return {\n      processAndCollectAllParams: () => {},\n      processAndCollectParams:\
+    \ () => {}\n    };\n  }\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+    \ return () => {};\n  if (key === 'clientParamBuilder.processAndCollectParams')\
+    \ return () => {};\n  return undefined;\n});\n\n// 5. callInWindow mock specifically\
+    \ for the gateCheck\nmock('callInWindow', (path, arg1, arg2, arg3, arg4, arg5)\
+    \ => {\n  if (path === 'fbq' && arg1 === 'gateCheck') {\n    const onEnabled =\
+    \ arg3;\n    if (typeof onEnabled === 'function') {\n      onEnabled(arg2, arg5);\n\
+    \    }\n  }\n  return true;\n});\n\n// 6. Run the code\nrunCode(mockData);\n\n\
+    // 7. Find the tracking call safely\nlet trackCall;\nfor (let i = 0; i < fbqCalls.length;\
+    \ i++) {\n  if (fbqCalls[i][2] === 'PageView') {\n    trackCall = fbqCalls[i];\n\
+    \  }\n}\n\nassertThat(trackCall).isNotEqualTo(undefined);\n\n// 8. Assertions\n\
+    const eventParams = trackCall[3];\n\nassertThat(eventParams.currency).isEqualTo('EUR');\n\
+    assertThat(eventParams.value).isEqualTo(42.50);\nassertThat(eventParams.transaction_id).isEqualTo('T_12345');\n\
+    \nassertThat(eventParams.contents[0].id).isEqualTo('SKU_1');\nassertThat(eventParams.contents[0].quantity).isEqualTo(1);\n\
+    assertThat(eventParams.contents[0].item_price).isEqualTo(10.00);\n\nassertThat(eventParams.items).isUndefined();"
+- name: Should skip GA4 gate check and data mapping when eventModel is undefined
+  code: "// 1. Mock copyFromDataLayer to return undefined (meaning eventModel doesn't\
+    \ exist)\nmock('copyFromDataLayer', (key) => {\n  return undefined; \n});\n\n\
+    // 2. Arrays to track what gets called\nlet fbqCalls = [];\nlet callInWindowCalls\
+    \ = [];\n\n// 3. Intercept fbq calls directly\nmock('copyFromWindow', key => {\n\
+    \  if (key === 'fbq') {\n    return function(cmd, p1, p2, p3, p4) {\n      fbqCalls.push([cmd,\
+    \ p1, p2, p3, p4]);\n    };\n  }\n  if (key === 'fbq.callMethod.apply') return\
+    \ () => {};\n  if (key === '_fbq_gtm_ids') return [];\n  if (key === 'clientParamBuilder')\
+    \ {\n    return {\n      processAndCollectAllParams: () => {},\n      processAndCollectParams:\
+    \ () => {}\n    };\n  }\n  return undefined;\n});\n\n// 4. Intercept callInWindow\
+    \ to see if gateCheck is fired\nmock('callInWindow', (path, arg1, arg2, arg3,\
+    \ arg4, arg5) => {\n  callInWindowCalls.push([path, arg1, arg2]);\n  \n  if (path\
+    \ === 'fbq' && arg1 === 'gateCheck' && arg2 === 'enable_gtm_parambuilder') {\n\
+    \    const onDisabled = arg4;\n    if (typeof onDisabled === 'function') {\n \
+    \     onDisabled(arg2, arg5);\n    }\n  }\n  return true;\n});\n\n// 5. Run the\
+    \ code\nrunCode(mockData);\n\n// 6. Assertions for the Gate Check\nlet ga4GateCheckCalled\
+    \ = false;\nfor (let i = 0; i < callInWindowCalls.length; i++) {\n  // Check if\
+    \ callInWindow('fbq', 'gateCheck', 'enable_gtm_ga4_structure', ...) was ever called\n\
+    \  if (callInWindowCalls[i][0] === 'fbq' && \n      callInWindowCalls[i][1] ===\
+    \ 'gateCheck' && \n      callInWindowCalls[i][2] === 'enable_gtm_ga4_structure')\
+    \ {\n    ga4GateCheckCalled = true;\n  }\n}\n\nassertThat(ga4GateCheckCalled).isFalse();\n\
+    \n// 7. Find the tracking call\nlet trackCall;\nfor (let i = 0; i < fbqCalls.length;\
+    \ i++) {\n  if (fbqCalls[i][2] === 'PageView') {\n    trackCall = fbqCalls[i];\n\
+    \  }\n}\n\n// 8. Assertions for the payload\nconst eventParams = trackCall[3];\n\
+    \nassertThat(eventParams.currency).isUndefined();\nassertThat(eventParams.transaction_id).isUndefined();\n\
+    assertThat(eventParams.items).isUndefined();\nassertThat(eventParams.value).isUndefined();"
+- name: Skips GA4 data mapping when enable_gtm_ga4_structure gate is disabled
+  code: "const ga4Data = {\n  currency: 'EUR',\n  value: 42.50,\n  transaction_id:\
+    \ 'T_12345',\n  items: [{ item_id: 'SKU_1', quantity: 1 }],\n  user_data: { email:\
+    \ 'test@example.com' }\n};\n\n// 1. Mock copyFromDataLayer so eventModel exists\n\
+    mock('copyFromDataLayer', (key) => {\n  if (key === 'eventModel') return ga4Data;\n\
+    \  return undefined;\n});\n\nlet fbqCalls = [];\n\n// 2. Intercept fbq calls directly\
+    \ to capture the final payload\nmock('copyFromWindow', key => {\n  if (key ===\
+    \ 'fbq') {\n    return function(cmd, p1, p2, p3, p4) {\n      fbqCalls.push([cmd,\
+    \ p1, p2, p3, p4]);\n    };\n  }\n  if (key === 'fbq.callMethod.apply') return\
+    \ () => {};\n  if (key === '_fbq_gtm_ids') return [];\n  if (key === 'clientParamBuilder')\
+    \ {\n    return {\n      processAndCollectAllParams: () => {},\n      processAndCollectParams:\
+    \ () => {}\n    };\n  }\n  return undefined;\n});\n\n// 3. Intercept callInWindow\
+    \ and trigger the onDisabled callback\nmock('callInWindow', (path, arg1, arg2,\
+    \ arg3, arg4, arg5) => {\n  \n  // Catch the GA4 Gate Check\n  if (path === 'fbq'\
+    \ && arg1 === 'gateCheck' && arg2 === 'enable_gtm_ga4_structure') {\n    const\
+    \ onDisabled = arg4; \n    if (typeof onDisabled === 'function') {\n      onDisabled(arg2,\
+    \ arg5); // gateName, pixelID\n    }\n  }\n  \n  if (path === 'fbq' && arg1 ===\
+    \ 'gateCheck' && arg2 === 'enable_gtm_parambuilder') {\n    const onDisabledParamBuilder\
+    \ = arg4;\n    if (typeof onDisabledParamBuilder === 'function') {\n      onDisabledParamBuilder(arg2,\
+    \ arg5);\n    }\n  }\n  \n  return true;\n});\n\n// 4. Run the code\nrunCode(mockData);\n\
+    \n// 5. Find the tracking call\nlet trackCall;\nfor (let i = 0; i < fbqCalls.length;\
+    \ i++) {\n  if (fbqCalls[i][2] === 'PageView') { \n    trackCall = fbqCalls[i];\n\
+    \  }\n}\n\n// 6. Assertions\nconst eventParams = trackCall[3]; \n\nassertThat(eventParams.currency).isUndefined();\n\
+    assertThat(eventParams.value).isUndefined();\nassertThat(eventParams.transaction_id).isUndefined();\n\
+    assertThat(eventParams.items).isUndefined();"
+- name: Fires event with GA4 data when gateCheck is enabled
+  code: "// 1. Set up\nconst testData = {\n  pixelId: '12345,23456',\n  eventName:\
+    \ 'standard',\n  standardEventName: 'Purchase', // Let's test a Purchase event\n\
+    \  customEventName: 'custom',\n  variableEventName: 'standard',\n  consent: true,\n\
+    \  advancedMatching: false,\n  advancedMatchingList: [],\n  objectPropertiesFromVariable:\
+    \ false,\n  objectPropertyList: [],\n  disableAutoConfig: false,\n  disablePushState:\
+    \ false,\n  enhancedEcommerce: false,\n  eventId: '',\n  gtmOnSuccess: () => {},\n\
+    \  gtmOnFailure: () => {},\n  ecommerceDataModel: 'useGA4Ecommerce' // Trigger\
+    \ the GA4 logic\n};\n\n// 2. Create an array to act as a \"spy\" for our fbq calls\n\
+    let fbqCalls = [];\n\n// 3. Override copyFromWindow locally to spy on the 'fbq'\
+    \ function\nmock('copyFromWindow', (key) => {\n  if (key === 'fbq') {\n    //\
+    \ Avoid using \"Array\" by capturing arguments explicitly\n    return (arg1, arg2,\
+    \ arg3, arg4, arg5) => {\n      fbqCalls.push([arg1, arg2, arg3, arg4, arg5]);\n\
+    \    };\n  }\n  if (key === 'fbq.callMethod.apply') return () => {};\n  if (key\
+    \ === '_fbq_gtm_ids') return [];\n  if (key === 'clientParamBuilder') {\n    return\
+    \ { processAndCollectAllParams: () => {}, processAndCollectParams: () => {} };\n\
+    \  }\n  return undefined;\n});\n\n// 4. Override copyFromDataLayer locally to\
+    \ return a fake GA4 eventModel\nmock('copyFromDataLayer', (key) => { \n  if (key\
+    \ === 'eventModel') {\n    return {\n      currency: 'USD',\n      value: 125.50,\n\
+    \      transaction_id: 'TRANS_9999',\n      items: [{ item_id: 'SKU_1', quantity:\
+    \ 1, price: 125.50 }]\n    };\n  }\n  return undefined;\n});\n\n// 5. Run the\
+    \ template code\nrunCode(testData);\n\n// 6. Assertions\nlet trackCalls = [];\n\
+    for (let i = 0; i < fbqCalls.length; i++) {\n  if (fbqCalls[i][0] === 'trackSingle'\
+    \ || fbqCalls[i][0] === 'trackSingleCustom') {\n    trackCalls.push(fbqCalls[i]);\n\
+    \  }\n}\n\n// Verify the event fired\nassertThat(trackCalls.length).isGreaterThan(0);\n\
+    \n// Verify the payload of the first pixel's event\nconst firstPixelCall = trackCalls[0];\n\
+    assertThat(firstPixelCall[0]).isEqualTo('trackSingle'); // command\nassertThat(firstPixelCall[1]).isEqualTo('12345');\
+    \ // pixelId\nassertThat(firstPixelCall[2]).isEqualTo('Purchase'); // eventName\n\
+    \nconst payload = firstPixelCall[3];\nassertThat(payload.currency).isEqualTo('USD');\n\
+    assertThat(payload.value).isEqualTo(125.50);\nassertThat(payload.transaction_id).isEqualTo('TRANS_9999');\n\
+    \nassertThat(payload.contents[0].id).isEqualTo('SKU_1');\nassertThat(payload.contents[0].quantity).isEqualTo(1);\n\
+    assertThat(payload.contents[0].item_price).isEqualTo(125.50);\n\nassertThat(payload.items).isUndefined();"
+- name: Pixel init is called before GA4 gateCheck
+  code: "mockData.ecommerceDataModel = 'useGA4Ecommerce';\nmockData.enhancedEcommerce\
+    \ = false;\n\nmock('copyFromDataLayer', key => {\n  if (key === 'eventModel')\
+    \ return { currency: 'USD', value: 10 };\n  return undefined;\n});\n\nlet executionOrder\
+    \ = [];\n\nmock('copyFromWindow', key => {\n  if (key === 'fbq') {\n    return\
+    \ function() {\n      if (arguments[0] === 'init') {\n        executionOrder.push('init');\n\
+    \      }\n    };\n  }\n  if (key === 'fbq.callMethod.apply') return () => {};\n\
+    \  if (key === '_fbq_gtm_ids') return [];\n  if (key === 'clientParamBuilder')\
+    \ {\n    return { processAndCollectAllParams: () => {}, processAndCollectParams:\
+    \ () => {} };\n  }\n  return undefined;\n});\n\nmock('callInWindow', (path, arg1,\
+    \ arg2, arg3) => {\n  if (path === 'fbq' && arg1 === 'gateCheck') {\n    executionOrder.push('gateCheck_'\
+    \ + arg2); \n    if (typeof arg3 === 'function') arg3(arg2, '12345');\n  }\n \
+    \ return true;\n});\n\nrunCode(mockData);\n\nlet initIndex = -1;\nlet gateCheckIndex\
+    \ = -1;\n\nfor (let i = 0; i < executionOrder.length; i++) {\n  if (executionOrder[i]\
+    \ === 'init' && initIndex === -1) {\n    initIndex = i;\n  }\n  if (executionOrder[i]\
+    \ === 'gateCheck_enable_gtm_ga4_structure' && gateCheckIndex === -1) {\n    gateCheckIndex\
+    \ = i;\n  }\n}\n\nassertThat(initIndex).isNotEqualTo(-1);\nassertThat(gateCheckIndex).isNotEqualTo(-1);\n\
+    assertThat(initIndex).isLessThan(gateCheckIndex);"
 setup: "const mockData = {\n  pixelId: '12345,23456',\n  eventName: 'standard',\n\
   \  standardEventName: 'PageView',\n  customEventName: 'custom',\n  variableEventName:\
   \ 'standard',\n  consent: true,\n  advancedMatching: false,\n  advancedMatchingList:\
-  \ [\n    {name: 'ct', value: 'Helsinki'},\n    {name: 'cn', value: 'Finland'}\n\
-  \  ],\n  objectPropertiesFromVariable: false,\n  objectPropertyList: [\n    {name:\
-  \ 'prop1', value: 'val1'},\n    {name: 'prop2', value: 'val2'}\n  ],\n  disableAutoConfig:\
-  \ false,\n  disablePushState: false,\n  enhancedEcommerce: false,\n  eventId: '',\n\
-  \  gtmOnSuccess: () => {},\n  gtmOnFailure: () => {}\n};\n\n// Restored to YOUR\
-  \ original structure!\nconst mockEec = {\n  gtm: {  \n    products: [{\n      id:\
-  \ 'i1',\n      name: 'n1',\n      category: 'c1',\n      price: '1.00',\n      quantity:\
-  \ 1\n    },{\n      id: 'i2',\n      name: 'n2',\n      category: 'c2',\n      price:\
-  \ '2.00',\n      quantity: 2\n    }]\n  },\n  fb: {\n    content_type: 'product',\n\
-  \    contents: [{\n      id: 'i1',\n      quantity: 1\n    },{\n      id: 'i2',\n\
-  \      quantity: 2\n    }],\n    currency: 'EUR',\n    value: 5.00\n  }\n};\n\n\
-  let injectedUrls = [];\n\nmock('injectScript', (url, onsuccess, onfailure, token)\
-  \ => {\n  injectedUrls.push(url);\n  if (onsuccess) {\n    onsuccess();\n  }\n});\n\
-  \nmock('callInWindow', (propName, arg1, arg2, arg3, arg4, arg5) => {\n  if (propName\
-  \ === 'fbq' && arg1 === 'gateCheck') {\n    const gateName = arg2;\n    const onEnabled\
-  \ = arg3;\n    const onDisabled = arg4;\n    const pixelID = arg5;\n    \n    if\
-  \ (typeof onEnabled === 'function') {\n      onEnabled(gateName, pixelID); \n  \
-  \  }\n  }\n  return true; \n});\n\nmock('copyFromWindow', key => {\n  if (key ===\
-  \ 'fbq') return () => {};\n  if (key === 'fbq.callMethod.apply') return () => {};\n\
-  \  if (key === '_fbq_gtm_ids') return [];\n  \n  if (key === 'clientParamBuilder')\
-  \ {\n    return {\n      processAndCollectAllParams: () => {},\n      processAndCollectParams:\
-  \ () => {}\n    };\n  }\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
-  \ return () => {};\n  if (key === 'clientParamBuilder.processAndCollectParams')\
-  \ return () => {};\n  \n  return undefined;\n});\n\n// We return a dummy object\
-  \ here, but your tests will override it to use mockEec.gtm\nmock('copyFromDataLayer',\
-  \ (key) => { \n  return undefined;\n});\n\nmock('getUrl', () => 'https://example.com');\n\
-  mock('logToConsole', () => {});\nmock('createQueue', () => {});\nmock('setInWindow',\
-  \ () => {});\nmock('aliasInWindow', () => {});"
+  \ [\n    {name: 'ct', value: 'Helsinki'},\n    {name: 'cn', value: 'Finland'},\n\
+  \    {name: 'external_id', value: 'UserId'}\n  ],\n  objectPropertiesFromVariable:\
+  \ false,\n  objectPropertyList: [\n    {name: 'prop1', value: 'val1'},\n    {name:\
+  \ 'prop2', value: 'val2'}\n  ],\n  disableAutoConfig: false,\n  disablePushState:\
+  \ false,\n  enhancedEcommerce: false,\n  eventId: '',\n  gtmOnSuccess: () => {},\n\
+  \  gtmOnFailure: () => {}\n};\n\n// Restored to YOUR original structure!\nconst\
+  \ mockEec = {\n  gtm: {  \n    products: [{\n      id: 'i1',\n      name: 'n1',\n\
+  \      category: 'c1',\n      price: '1.00',\n      quantity: 1\n    },{\n     \
+  \ id: 'i2',\n      name: 'n2',\n      category: 'c2',\n      price: '2.00',\n  \
+  \    quantity: 2\n    }]\n  },\n  fb: {\n    content_type: 'product',\n    contents:\
+  \ [{\n      id: 'i1',\n      quantity: 1\n    },{\n      id: 'i2',\n      quantity:\
+  \ 2\n    }],\n    currency: 'EUR',\n    value: 5.00\n  }\n};\n\nlet injectedUrls\
+  \ = [];\n\nmock('injectScript', (url, onsuccess, onfailure, token) => {\n  injectedUrls.push(url);\n\
+  \  if (onsuccess) {\n    onsuccess();\n  }\n});\n\nmock('callInWindow', (propName,\
+  \ arg1, arg2, arg3, arg4, arg5) => {\n  if (propName === 'fbq' && arg1 === 'gateCheck')\
+  \ {\n    const gateName = arg2;\n    const onEnabled = arg3;\n    const onDisabled\
+  \ = arg4;\n    const pixelID = arg5;\n    \n    if (typeof onEnabled === 'function')\
+  \ {\n      onEnabled(gateName, pixelID); \n    }\n  }\n  return true; \n});\n\n\
+  mock('copyFromWindow', key => {\n  if (key === 'fbq') return () => {};\n  if (key\
+  \ === 'fbq.callMethod.apply') return () => {};\n  if (key === '_fbq_gtm_ids') return\
+  \ [];\n  \n  if (key === 'clientParamBuilder') {\n    return {\n      processAndCollectAllParams:\
+  \ () => {},\n      processAndCollectParams: () => {}\n    };\n  }\n  if (key ===\
+  \ 'clientParamBuilder.processAndCollectAllParams') return () => {};\n  if (key ===\
+  \ 'clientParamBuilder.processAndCollectParams') return () => {};\n  \n  return undefined;\n\
+  });\n\nmock('copyFromDataLayer', (key) => { \n  return undefined;\n});\n\nmock('getUrl',\
+  \ () => 'https://example.com');\nmock('logToConsole', () => {});\nmock('createQueue',\
+  \ () => {});\nmock('setInWindow', () => {});\nmock('aliasInWindow', () => {});"
 
 
 ___NOTES___
