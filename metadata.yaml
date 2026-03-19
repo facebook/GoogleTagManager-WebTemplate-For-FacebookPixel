@@ -2,9 +2,11 @@ homepage: "https://www.simoahava.com/"
 documentation: "https://www.simoahava.com/custom-templates/facebook-pixel"
 versions:
   # Latest version
+  - sha: 30d3e57ff56e376b3ce3304151b70ac39e77dba0
+    changeNotes: Fix the empty eventModel issue.
+  # Older versions
   - sha: 76e46eacebc53cacb18b0145cd518d7e53f05730
     changeNotes: Added Parameter Builder and GA4 Ecommerce support.
-  # Older versions
   - sha: 11c004614f6b8f7cc999caabef521086116ce302
     changeNotes: Added Event ID to pixel fields for server-side deduplication.
   - sha: 6eab67135d4e8b6052332e9b52dcb3d7e88b5b2c
