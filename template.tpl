@@ -674,12 +674,12 @@ if (data.ecommerceDataModel === 'useGA4Ecommerce') {
     'enable_gtm_ga4_structure',
     function(gateName, pixelID) {
       // onEnabled callback - wait to process and then fire
-      eventName = data.ga4EventName ? data.ga4EventName : (eventModel.eventName ? eventModel.eventName : eventName);
-      if(eventModel.currency) customData.currency = eventModel.currency;
-      if(eventModel.value) customData.value = eventModel.value;
-      if(eventModel.transaction_id) customData.transaction_id = eventModel.transaction_id;
-      if(eventModel.user_data) customData.user_data = eventModel.user_data;
-      if(eventModel.items && getType(eventModel.items) === 'array') {
+      eventName = data.ga4EventName ? data.ga4EventName : ((eventModel && eventModel.event_name) ? eventModel.event_name : eventName);
+      if(eventModel && eventModel.currency) customData.currency = eventModel.currency;
+      if(eventModel && eventModel.value) customData.value = eventModel.value;
+      if(eventModel && eventModel.transaction_id) customData.transaction_id = eventModel.transaction_id;
+      if(eventModel && eventModel.user_data) customData.user_data = eventModel.user_data;
+      if(eventModel && eventModel.items && getType(eventModel.items) === 'array') {
         customData.contents = eventModel.items.map(item => {
           return {
             "id": (item.item_id || item.item_name) || undefined,
@@ -1963,6 +1963,49 @@ scenarios:
     \ === 'gateCheck_enable_gtm_ga4_structure' && gateCheckIndex === -1) {\n    gateCheckIndex\
     \ = i;\n  }\n}\n\nassertThat(initIndex).isNotEqualTo(-1);\nassertThat(gateCheckIndex).isNotEqualTo(-1);\n\
     assertThat(initIndex).isLessThan(gateCheckIndex);"
+- name: GA4 ecommerce does not crash when eventModel is undefined
+  code: "mockData.ecommerceDataModel = 'useGA4Ecommerce';\nmockData.enhancedEcommerce\
+    \ = false;\nmockData.ga4EventName = '';\n\nmock('copyFromDataLayer', key => {\n\
+    \  return undefined;\n});\n\nlet fbqCalls = [];\n\nmock('copyFromWindow', key =>\
+    \ {\n  if (key === 'fbq') {\n    return function(cmd, p1, p2, p3, p4) {\n      fbqCalls.push([cmd,\
+    \ p1, p2, p3, p4]);\n    };\n  }\n  if (key === 'fbq.callMethod.apply') return\
+    \ () => {};\n  if (key === '_fbq_gtm_ids') return [];\n  if (key === 'clientParamBuilder')\
+    \ {\n    return { processAndCollectAllParams: () => {}, processAndCollectParams:\
+    \ () => {} };\n  }\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+    \ return () => {};\n  if (key === 'clientParamBuilder.processAndCollectParams')\
+    \ return () => {};\n  return undefined;\n});\n\nmock('callInWindow', (path, arg1,\
+    \ arg2, arg3, arg4, arg5) => {\n  if (path === 'fbq' && arg1 === 'gateCheck' &&\
+    \ arg2 === 'enable_gtm_ga4_structure') {\n    const onEnabled = arg3;\n    if (typeof\
+    \ onEnabled === 'function') {\n      onEnabled(arg2, arg5);\n    }\n  }\n  if (path\
+    \ === 'fbq' && arg1 === 'gateCheck' && arg2 === 'enable_gtm_parambuilder') {\n\
+    \    const onDisabled = arg4;\n    if (typeof onDisabled === 'function') {\n   \
+    \   onDisabled(arg2, arg5);\n    }\n  }\n  return true;\n});\n\nrunCode(mockData);\n\
+    \nlet trackCall;\nfor (let i = 0; i < fbqCalls.length; i++) {\n  if (fbqCalls[i][0]\
+    \ === 'trackSingle') {\n    trackCall = fbqCalls[i];\n  }\n}\n\nassertThat(trackCall).isNotEqualTo(undefined);\n\
+    assertThat(trackCall[2]).isEqualTo('PageView');\n\nconst eventParams = trackCall[3];\n\
+    assertThat(eventParams.currency).isUndefined();\nassertThat(eventParams.value).isUndefined();\n\
+    assertThat(eventParams.transaction_id).isUndefined();\nassertThat(eventParams.contents).isUndefined();\n\
+    assertThat(eventParams.user_data).isUndefined();\nassertApi('gtmOnSuccess').wasCalled();"
+- name: GA4 ecommerce uses ga4EventName when eventModel is undefined
+  code: "mockData.ecommerceDataModel = 'useGA4Ecommerce';\nmockData.enhancedEcommerce\
+    \ = false;\nmockData.ga4EventName = 'Purchase';\n\nmock('copyFromDataLayer', key\
+    \ => {\n  return undefined;\n});\n\nlet fbqCalls = [];\n\nmock('copyFromWindow',\
+    \ key => {\n  if (key === 'fbq') {\n    return function(cmd, p1, p2, p3, p4) {\n\
+    \      fbqCalls.push([cmd, p1, p2, p3, p4]);\n    };\n  }\n  if (key === 'fbq.callMethod.apply')\
+    \ return () => {};\n  if (key === '_fbq_gtm_ids') return [];\n  if (key === 'clientParamBuilder')\
+    \ {\n    return { processAndCollectAllParams: () => {}, processAndCollectParams:\
+    \ () => {} };\n  }\n  if (key === 'clientParamBuilder.processAndCollectAllParams')\
+    \ return () => {};\n  if (key === 'clientParamBuilder.processAndCollectParams')\
+    \ return () => {};\n  return undefined;\n});\n\nmock('callInWindow', (path, arg1,\
+    \ arg2, arg3, arg4, arg5) => {\n  if (path === 'fbq' && arg1 === 'gateCheck' &&\
+    \ arg2 === 'enable_gtm_ga4_structure') {\n    const onEnabled = arg3;\n    if (typeof\
+    \ onEnabled === 'function') {\n      onEnabled(arg2, arg5);\n    }\n  }\n  if (path\
+    \ === 'fbq' && arg1 === 'gateCheck' && arg2 === 'enable_gtm_parambuilder') {\n\
+    \    const onDisabled = arg4;\n    if (typeof onDisabled === 'function') {\n   \
+    \   onDisabled(arg2, arg5);\n    }\n  }\n  return true;\n});\n\nrunCode(mockData);\n\
+    \nlet trackCall;\nfor (let i = 0; i < fbqCalls.length; i++) {\n  if (fbqCalls[i][0]\
+    \ === 'trackSingle') {\n    trackCall = fbqCalls[i];\n  }\n}\n\nassertThat(trackCall).isNotEqualTo(undefined);\n\
+assertThat(trackCall[2]).isEqualTo('Purchase');\nassertApi('gtmOnSuccess').wasCalled();"
 setup: "const mockData = {\n  pixelId: '12345,23456',\n  eventName: 'standard',\n\
   \  standardEventName: 'PageView',\n  customEventName: 'custom',\n  variableEventName:\
   \ 'standard',\n  consent: true,\n  advancedMatching: false,\n  advancedMatchingList:\
