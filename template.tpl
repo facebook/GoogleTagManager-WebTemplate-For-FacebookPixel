@@ -1,4 +1,4 @@
-﻿﻿___TERMS_OF_SERVICE___
+﻿﻿﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -61,6 +61,13 @@ ___TEMPLATE_PARAMETERS___
     "checkboxText": "Enhanced Ecommerce dataLayer Integration",
     "simpleValueType": true,
     "help": "If you check this, then the Facebook pixel will populate \u003cstrong\u003eEvent Name\u003c/strong\u003e and \u003cstrong\u003eObject Properties\u003c/strong\u003e automatically from the last \u003ca href\u003d\"https://developers.google.com/tag-manager/enhanced-ecommerce\"\u003eecommerce\u003c/a\u003e object pushed into the dataLayer array."
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "useGA4Ecommerce",
+    "checkboxText": "Use GA4 dataLayer Integration",
+    "simpleValueType": true,
+    "help": "**Use GA4 Ecommerce:**\u003cbr/\u003e\n\u003cbr/\u003e\nIf this feature is enabled, please push an **eventModel** object containing the required parameters into the dataLayer.\u003cbr/\u003e\n\u003cbr/\u003e\nExample:\u003cbr/\u003e\n\u003cbr/\u003e\nwindow.dataLayer \u003d window.dataLayer || [];\u003cbr/\u003e\n\u003cbr/\u003e\nwindow.dataLayer.push({\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\"event\": \"add_to_cart\",\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\"eventModel\": {\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"currency\": \"USD\",\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"value\": 30,\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"items\": [\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;{\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"item_id\": \"item_id\",\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"item_name\": \"item_name\",\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\"price\": 30\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;}\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;\u0026nbsp;\u0026nbsp;]\u003cbr/\u003e\n\u0026nbsp;\u0026nbsp;}\u003cbr/\u003e\n});"
   },
   {
     "type": "RADIO",
@@ -486,6 +493,7 @@ const initIds = copyFromWindow('_fbq_gtm_ids') || [];
 const pixelIds = data.pixelId;
 const standardEventNames = ['AddPaymentInfo', 'AddToCart', 'AddToWishlist', 'CompleteRegistration', 'Contact', 'CustomizeProduct', 'Donate', 'FindLocation', 'InitiateCheckout', 'Lead', 'PageView', 'Purchase', 'Schedule', 'Search', 'StartTrial', 'SubmitApplication', 'Subscribe', 'ViewContent'];
 const ecommerce = copyFromDataLayer('ecommerce', 1);
+const eventModel = copyFromDataLayer('eventModel', 1);
 
 // Helper methods
 const fail = msg => {
@@ -534,12 +542,12 @@ if (data.enhancedEcommerce) {
   }, 0);
 }
 
-// Build the fbq() command arguments
+// Prepare event variables
 const cidParams = data.advancedMatchingList && data.advancedMatchingList.length ? makeTableMap(data.advancedMatchingList, 'name', 'value') : {};
 const objectProps = data.objectPropertyList && data.objectPropertyList.length ? makeTableMap(data.objectPropertyList, 'name', 'value') : {};
 const objectPropsFromVar = getType(data.objectPropertiesFromVariable) === 'object' ? data.objectPropertiesFromVariable : {};
-const mergedObjectProps = mergeObj(objectPropsFromVar, objectProps);
-const finalObjectProps = mergeObj(eecObjectProps || {}, mergedObjectProps);
+let customData = {};
+
 eventName = eventName || (data.eventName === 'custom' ? data.customEventName : (data.eventName === 'variable' ? data.variableEventName : data.standardEventName));
 
 const command = standardEventNames.indexOf(eventName) === -1 ? 'trackSingleCustom' : 'trackSingle';
@@ -604,20 +612,82 @@ pixelIds.split(',').forEach(pixelId => {
     fbq('init', pixelId, cidParams);
 
     // Monitoring agent string for Tag Setup
-    fbq('set','agent','tmSimo-GTM-WebTemplate-2.0.1', pixelId);
+    const agentString = 'tmSimo-GTM-WebTemplate-2.0.2' + (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '');
+    fbq('set','agent', agentString, pixelId);
 
     initIds.push(pixelId);
     setInWindow('_fbq_gtm_ids', initIds, true);
-
-  }
-
-  // Call the fbq() method with the parameters defined earlier
-  if (data.eventId) {
-    fbq(command, pixelId, eventName, finalObjectProps, {eventID: data.eventId});
-  } else {
-    fbq(command, pixelId, eventName, finalObjectProps);
   }
 });
+
+const fireEvent = (resolvedCustomData) => {
+  const mergedCustom = mergeObj(resolvedCustomData, eecObjectProps || {});
+  const mergedObjectProps = mergeObj(objectPropsFromVar, objectProps);
+  const finalObjectProps = mergeObj(mergedCustom, mergedObjectProps);
+
+  pixelIds.split(',').forEach(pixelId => {
+    if (data.eventId) {
+      fbq(command, pixelId, eventName, finalObjectProps, {eventID: data.eventId});
+    } else {
+      fbq(command, pixelId, eventName, finalObjectProps);
+    }
+  });
+};
+
+if (data.useGA4Ecommerce) {
+  const firstPixelId = pixelIds.split(',')[0];
+  callInWindow(
+    'fbq',
+    'gateCheck',
+    'enable_gtm_ga4_structure',
+    function(gateName, pixelID) {
+      // Set user_data from eventModel into cidParams
+      if (eventModel && eventModel.user_data) {
+        var ud = eventModel.user_data;
+        if (ud.email_address && !cidParams.em) cidParams.em = ud.email_address;
+        if (ud.phone_number && !cidParams.ph) cidParams.ph = ud.phone_number;
+        if (ud.address) {
+          if (ud.address.first_name && !cidParams.fn) cidParams.fn = ud.address.first_name;
+          if (ud.address.last_name && !cidParams.ln) cidParams.ln = ud.address.last_name;
+          if (ud.address.city && !cidParams.ct) cidParams.ct = ud.address.city;
+          if (ud.address.region && !cidParams.st) cidParams.st = ud.address.region;
+          if (ud.address.postal_code && !cidParams.zp) cidParams.zp = ud.address.postal_code;
+          if (ud.address.country && !cidParams.country) cidParams.country = ud.address.country;
+        }
+        if (ud.fb_login_id && !cidParams.fb_login_id) cidParams.fb_login_id = ud.fb_login_id;
+
+        pixelIds.split(',').forEach(function(pixelId) {
+          fbq('init', pixelId, cidParams);
+        });
+      }
+
+      // Set custom_data from eventModel
+      if (eventModel) {
+        if (eventModel.currency) customData.currency = eventModel.currency;
+        if (eventModel.value) customData.value = eventModel.value;
+        if (eventModel.search_term) customData.search_string = eventModel.search_term;
+        if (eventModel.transaction_id) customData.order_id = eventModel.transaction_id;
+        if (eventModel.items && getType(eventModel.items) === 'array') {
+          customData.contents = eventModel.items.map(function(item) {
+            return {
+              id: (item.item_id || item.item_name) || undefined,
+              item_price: item.price || undefined,
+              quantity: item.quantity || undefined
+            };
+          });
+        }
+      }
+
+      fireEvent(customData);
+    },
+    function(gateName, pixelID) {
+      fireEvent(customData);
+    },
+    firstPixelId
+  );
+} else {
+  fireEvent(customData);
+}
 
 // Inject Param Builder script if enabled
 const onParamBuilderFailure = () => {
@@ -655,20 +725,16 @@ const processAndCollectAllParams = () => {
 
 
 function gtmSuccess() {
-  // Check GK via pixel SDK after fbevents.js has loaded
-  // API: fbq('checkGate', gateName, onEnabled, onDisabled, pixelID)
-  // Use the first pixel ID from the comma-separated list
   var firstPixelId = pixelIds.split(',')[0];
+
   callInWindow(
     'fbq',
     'gateCheck',
     'enable_gtm_parambuilder',
     function(gateName, pixelID) {
-      // onEnabled callback - gate is enabled, inject paramBuilder script
       injectScript(PARAM_BUILDER_SCRIPT_URL, processAndCollectAllParams, onParamBuilderFailure, PARAM_BUILDER_SCRIPT_URL);
     },
     function(gateName, pixelID) {
-      // onDisabled callback - gate is disabled, proceed without paramBuilder
       data.gtmOnSuccess();
     },
     firstPixelId
@@ -1204,6 +1270,10 @@ ___WEB_PERMISSIONS___
               {
                 "type": 1,
                 "string": "ecommerce"
+              },
+              {
+                "type": 1,
+                "string": "eventModel"
               }
             ]
           }
@@ -1650,6 +1720,172 @@ scenarios:
     \n// 1. Verify the template finished successfully\nassertApi('gtmOnSuccess').wasCalled();\n\
     assertApi('gtmOnFailure').wasNotCalled();\n\n// 2. Verify the Param Builder script\
     \ was skipped\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');"
+- name: GA4 gate enabled - eventModel merged into tracking
+  code: |-
+    mockData.useGA4Ecommerce = true;
+    mockData.objectPropertyList = {};
+
+    var mockEventModel = {
+      currency: 'USD',
+      value: '99.99',
+      search_term: 'shoes',
+      transaction_id: 'order_abc',
+      items: [
+        { item_id: 'SKU1', price: 49.99, quantity: 2 },
+        { item_id: 'SKU2', item_name: 'Hat', price: 10.00, quantity: 1 }
+      ]
+    };
+
+    mock('copyFromDataLayer', key => {
+      if (key === 'eventModel') return mockEventModel;
+      return undefined;
+    });
+
+    var trackedProps = null;
+    let index = 0;
+    mock('copyFromWindow', key => {
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'trackSingle') {
+          trackedProps = arguments[3];
+          index += 1;
+        }
+      };
+      if (key === 'fbq.callMethod.apply') return () => {};
+      if (key === '_fbq_gtm_ids') return [];
+      if (key === 'clientParamBuilder') return { processAndCollectAllParams: () => {} };
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+      if (key === 'clientParamBuilder.processAndCollectParams') return () => {};
+      return undefined;
+    });
+
+    runCode(mockData);
+
+    assertThat(index).isGreaterThan(0);
+    assertThat(trackedProps.currency).isEqualTo('USD');
+    assertThat(trackedProps.value).isEqualTo('99.99');
+    assertThat(trackedProps.search_string).isEqualTo('shoes');
+    assertThat(trackedProps.order_id).isEqualTo('order_abc');
+    assertThat(trackedProps.contents.length).isEqualTo(2);
+    assertThat(trackedProps.contents[0].id).isEqualTo('SKU1');
+    assertThat(trackedProps.contents[1].id).isEqualTo('SKU2');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: GA4 gate disabled - standard props used
+  code: |-
+    mockData.useGA4Ecommerce = true;
+    mockData.objectPropertyList = {};
+
+    mock('copyFromDataLayer', key => {
+      if (key === 'eventModel') return { currency: 'EUR', value: '50.00' };
+      return undefined;
+    });
+
+    // Mock gateCheck to call onDisabled for enable_gtm_ga4_structure
+    mock('callInWindow', (propName, arg1, arg2, arg3, arg4, arg5) => {
+      if (propName === 'fbq' && arg1 === 'gateCheck') {
+        if (arg2 === 'enable_gtm_ga4_structure') {
+          if (typeof arg4 === 'function') arg4(arg2, arg5);
+        } else {
+          if (typeof arg3 === 'function') arg3(arg2, arg5);
+        }
+      }
+      return true;
+    });
+
+    var trackedProps = null;
+    mock('copyFromWindow', key => {
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'trackSingle') {
+          trackedProps = arguments[3];
+        }
+      };
+      if (key === 'fbq.callMethod.apply') return () => {};
+      if (key === '_fbq_gtm_ids') return [];
+      if (key === 'clientParamBuilder') return { processAndCollectAllParams: () => {} };
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+      if (key === 'clientParamBuilder.processAndCollectParams') return () => {};
+      return undefined;
+    });
+
+    runCode(mockData);
+
+    // Should NOT have GA4 fields since gate was disabled
+    assertThat(trackedProps.currency).isUndefined();
+    assertThat(trackedProps.search_string).isUndefined();
+    assertApi('gtmOnSuccess').wasCalled();
+- name: GA4 not enabled - unchanged behavior
+  code: |-
+    mockData.useGA4Ecommerce = false;
+
+    var trackCount = 0;
+    mock('copyFromWindow', key => {
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'trackSingle') trackCount += 1;
+      };
+      if (key === 'fbq.callMethod.apply') return () => {};
+      if (key === '_fbq_gtm_ids') return [];
+      if (key === 'clientParamBuilder') return { processAndCollectAllParams: () => {} };
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+      if (key === 'clientParamBuilder.processAndCollectParams') return () => {};
+      return undefined;
+    });
+
+    runCode(mockData);
+
+    assertThat(trackCount).isEqualTo(2);
+    assertApi('gtmOnSuccess').wasCalled();
+- name: GA4 user_data merged into cidParams
+  code: |-
+    mockData.useGA4Ecommerce = true;
+    mockData.advancedMatchingList = [
+      {name: 'em', value: 'override@test.com'}
+    ];
+
+    var mockEventModel = {
+      user_data: {
+        email_address: 'ga4@test.com',
+        phone_number: '5551234567',
+        address: {
+          first_name: 'John',
+          last_name: 'Doe',
+          city: 'Menlo Park',
+          region: 'CA',
+          postal_code: '94025',
+          country: 'US'
+        }
+      }
+    };
+
+    mock('copyFromDataLayer', key => {
+      if (key === 'eventModel') return mockEventModel;
+      return undefined;
+    });
+
+    var initCidParams = null;
+    mock('copyFromWindow', key => {
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'init') initCidParams = arguments[2];
+      };
+      if (key === 'fbq.callMethod.apply') return () => {};
+      if (key === '_fbq_gtm_ids') return [];
+      if (key === 'clientParamBuilder') return { processAndCollectAllParams: () => {} };
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+      if (key === 'clientParamBuilder.processAndCollectParams') return () => {};
+      return undefined;
+    });
+
+    runCode(mockData);
+
+    // advancedMatchingList 'em' should override ga4 user_data email_address
+    assertThat(initCidParams.em).isEqualTo('override@test.com');
+    // GA4 user_data fields should be present
+    assertThat(initCidParams.ph).isEqualTo('5551234567');
+    assertThat(initCidParams.fn).isEqualTo('John');
+    assertThat(initCidParams.ln).isEqualTo('Doe');
+    assertThat(initCidParams.ct).isEqualTo('Menlo Park');
+    assertThat(initCidParams.st).isEqualTo('CA');
+    assertThat(initCidParams.zp).isEqualTo('94025');
+    assertThat(initCidParams.country).isEqualTo('US');
+    assertApi('gtmOnSuccess').wasCalled();
 - name: GK off pixel load failed
   code: "// Reset the array\ninjectedUrls = [];\n\n// Mock injectScript to simulate\
     \ a network error / loading failure\nmock('injectScript', (url, onsuccess, onfailure,\
