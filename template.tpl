@@ -1,4 +1,4 @@
-﻿﻿﻿___TERMS_OF_SERVICE___
+﻿﻿﻿﻿﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -612,7 +612,7 @@ pixelIds.split(',').forEach(pixelId => {
     fbq('init', pixelId, cidParams);
 
     // Monitoring agent string for Tag Setup
-    const agentString = 'tmSimo-GTM-WebTemplate-2.0.2' + (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '');
+    const agentString = 'tmSimo-GTM-WebTemplate-2.0.3' + (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '');
     fbq('set','agent', agentString, pixelId);
 
     initIds.push(pixelId);
@@ -712,10 +712,12 @@ const processAndCollectAllParams = () => {
   if (hasProcessAndCollectAllParams) {
     callInWindow('clientParamBuilder.processAndCollectAllParams', currentPageUrl);
     log("processAndCollectAllParams completed successfully.");
+    setInWindow('_fbq_param_builder_status', 'complete', true);
     data.gtmOnSuccess();
   } else if (hasProcessAndCollectParams) {
     callInWindow('clientParamBuilder.processAndCollectParams', currentPageUrl);
     log("processAndCollectParams completed successfully.");
+    setInWindow('_fbq_param_builder_status', 'complete', true);
     data.gtmOnSuccess();
   } else {
     log("ERROR: Neither processAndCollectAllParams nor processAndCollectParams methods found.");
@@ -725,6 +727,16 @@ const processAndCollectAllParams = () => {
 
 
 function gtmSuccess() {
+  const status = copyFromWindow('_fbq_param_builder_status');
+
+  // If it's done OR currently downloading, skip injecting it again!
+  if (status === 'complete' || status === 'loading') {
+    return data.gtmOnSuccess();
+  }
+
+  // Immediately lock the state synchronously so Tag 2 doesn't enter this block
+  setInWindow('_fbq_param_builder_status', 'loading', true);
+
   var firstPixelId = pixelIds.split(',')[0];
 
   callInWindow(
@@ -1058,6 +1070,45 @@ ___WEB_PERMISSIONS___
                   {
                     "type": 1,
                     "string": "fbq.disablePushState"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "_fbq_param_builder_status"
                   },
                   {
                     "type": 8,
@@ -1895,6 +1946,30 @@ scenarios:
     \ and success was not\nassertApi('gtmOnFailure').wasCalled();\nassertApi('gtmOnSuccess').wasNotCalled();\n\
     \n// 2. Verify only the first script was attempted\nassertThat(injectedUrls).contains('https://connect.facebook.net/en_US/fbevents.js');\n\
     assertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');"
+- name: ParamBuilder already called in proc - loading state
+  code: "// Simulate that the flag is already set from a previous event\nmock('copyFromWindow',\
+    \ key => {\n  if (key === '_fbq_param_builder_status') return 'loading'; \n  if\
+    \ (key === 'fbq') return () => {};\n  if (key === '_fbq_gtm_ids') return [];\n\
+    \  return undefined;\n});\n\ninjectedUrls = [];\nlet processCalled = false;\n\n\
+    // Monitor callInWindow to see if the param builder is executed\nmock('callInWindow',\
+    \ (propName) => {\n   if (propName === 'clientParamBuilder.processAndCollectAllParams'\
+    \ || \n       propName === 'clientParamBuilder.processAndCollectParams') {\n \
+    \    processCalled = true;\n   }\n   return true;\n});\n\n// Run the template\n\
+    runCode(mockData);\n\n// 1. Verify it did NOT attempt to inject the script\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');\n\
+    \n// 2. Verify it did NOT call the function (saving the cookie write)\nassertThat(processCalled).isFalse();\n\
+    \n// 3. Verify the tag still finished successfully\nassertApi('gtmOnSuccess').wasCalled();"
+- name: ParamBuilder already called in proc - complete state
+  code: "// Simulate that the flag is already set from a previous event\nmock('copyFromWindow',\
+    \ key => {\n  if (key === '_fbq_param_builder_status') return 'complete'; \n \
+    \ if (key === 'fbq') return () => {};\n  if (key === '_fbq_gtm_ids') return [];\n\
+    \  return undefined;\n});\n\ninjectedUrls = [];\nlet processCalled = false;\n\n\
+    // Monitor callInWindow to see if the param builder is executed\nmock('callInWindow',\
+    \ (propName) => {\n   if (propName === 'clientParamBuilder.processAndCollectAllParams'\
+    \ || \n       propName === 'clientParamBuilder.processAndCollectParams') {\n \
+    \    processCalled = true;\n   }\n   return true;\n});\n\n// Run the template\n\
+    runCode(mockData);\n\n// 1. Verify it did NOT attempt to inject the script\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');\n\
+    \n// 2. Verify it did NOT call the function (saving the cookie write)\nassertThat(processCalled).isFalse();\n\
+    \n// 3. Verify the tag still finished successfully\nassertApi('gtmOnSuccess').wasCalled();"
 setup: "const mockData = {\n  pixelId: '12345,23456',\n  eventName: 'standard',\n\
   \  standardEventName: 'PageView',\n  customEventName: 'custom',\n  variableEventName:\
   \ 'standard',\n  consent: true,\n  advancedMatching: false,\n  advancedMatchingList:\
