@@ -2,9 +2,11 @@ homepage: "https://www.simoahava.com/"
 documentation: "https://www.simoahava.com/custom-templates/facebook-pixel"
 versions:
   # Latest version
+  - sha: e0ac315f5a8c9427b7acbe4d8793274fc7fe3b20
+    changeNotes: v2.0.3 Reduce repeated cookie writes by skipping ParamBuilder on subsequent events within the same page.
+  # Older versions
   - sha: 8fa826bcbe060fac56de340daec4519456160f4f
     changeNotes: v2.0.2 Add support for GA4 Ecommerce from the data layer.
-  # Older versions
   - sha: ef596ff236bfa06a1102138f77d98921d472526a
     changeNotes: v2.0.1 Remove GA4 support to keep backward compatibility.
   - sha: 30d3e57ff56e376b3ce3304151b70ac39e77dba0
