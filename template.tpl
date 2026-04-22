@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿___TERMS_OF_SERVICE___
+﻿﻿﻿﻿﻿﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -612,13 +612,45 @@ pixelIds.split(',').forEach(pixelId => {
     fbq('init', pixelId, cidParams);
 
     // Monitoring agent string for Tag Setup
-    const agentString = 'tmSimo-GTM-WebTemplate-2.0.3' + (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '');
+    const agentString = 'tmSimo-GTM-WebTemplate-2.0.4' + (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '');
     fbq('set','agent', agentString, pixelId);
 
     initIds.push(pixelId);
     setInWindow('_fbq_gtm_ids', initIds, true);
+
+    // If this first-time init included cidParams, mark the page as
+    // already-initialized-with-cidParams so we never re-init for it.
+    if (data.advancedMatchingList && data.advancedMatchingList.length) {
+      setInWindow('_fbq_gtm_cidparams_initialized', true, true);
+    }
   }
 });
+
+// Re-init pixels with cidParams when:
+//   - this tag fire actually has Advanced Matching data, AND
+//   - we have NOT yet initialized any pixel with cidParams on this page.
+if (data.advancedMatchingList && data.advancedMatchingList.length) {
+  const cidParamsInitialized = copyFromWindow('_fbq_gtm_cidparams_initialized') === true;
+  if (!cidParamsInitialized) {
+    setInWindow('_fbq_gtm_cidparams_initialized', true, true);
+
+    const firstPixelId = pixelIds.split(',')[0];
+    callInWindow(
+      'fbq',
+      'gateCheck',
+      'enable_reinit_cidparams',
+      function(gateName, pixelID) {
+        pixelIds.split(',').forEach(pixelId => {
+          if (initIds.indexOf(pixelId) !== -1) {
+            fbq('init', pixelId, cidParams);
+          }
+        });
+      },
+      function(gateName, pixelID) {},
+      firstPixelId
+    );
+  }
+}
 
 const fireEvent = (resolvedCustomData) => {
   const mergedCustom = mergeObj(resolvedCustomData, eecObjectProps || {});
@@ -914,6 +946,45 @@ ___WEB_PERMISSIONS___
                   {
                     "type": 1,
                     "string": "_fbq_gtm_ids"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "_fbq_gtm_cidparams_initialized"
                   },
                   {
                     "type": 8,
@@ -1505,6 +1576,10 @@ scenarios:
     assertApi('gtmOnSuccess').wasCalled();
 - name: Pixel IDs set - do not initialize
   code: |-
+    // Clear advancedMatchingList so the cidParams update block is skipped,
+    // isolating the init guard behavior.
+    mockData.advancedMatchingList = [];
+
     mock('copyFromWindow', key => {
       // 1. The specific logic for this test (checking initialized IDs and preventing re-init)
       if (key === '_fbq_gtm_ids') return ['12345', '23456'];
@@ -1540,6 +1615,153 @@ scenarios:
     \nrunCode(mockData);\n\n\n\n// Verify that the tag finished successfully.\n\n\
     assertThat(index, 'trackSingle called incorrect number of times').isEqualTo(2);\n\
     \nassertApi('gtmOnSuccess').wasCalled();"
+- name: cidParams updated on subsequent fire when pixel already initialized
+  code: |-
+    mockData.advancedMatchingList = [
+      {name: 'em', value: 'user@example.com'}
+    ];
+
+    let initCalls = [];
+    mock('copyFromWindow', key => {
+      // Pixels already initialized, but no init-with-cidParams happened yet
+      if (key === '_fbq_gtm_ids') return ['12345', '23456'];
+      if (key === '_fbq_gtm_cidparams_initialized') return false;
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'init') {
+          initCalls.push({pixelId: arguments[1], cidParams: arguments[2]});
+        }
+      };
+
+      // Required ParamBuilder mocks
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+    });
+
+    runCode(mockData);
+
+    // Init guard skipped (pixels already initialized).
+    // Re-init block fires init for each already-initialized pixel with cidParams.
+    assertThat(initCalls.length).isEqualTo(2);
+    assertThat(initCalls[0].pixelId).isEqualTo('12345');
+    assertThat(initCalls[0].cidParams.em).isEqualTo('user@example.com');
+    assertThat(initCalls[1].pixelId).isEqualTo('23456');
+    assertThat(initCalls[1].cidParams.em).isEqualTo('user@example.com');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: cidParams not updated on subsequent fire when advancedMatchingList is empty
+  code: |-
+    mockData.advancedMatchingList = [];
+
+    mock('copyFromWindow', key => {
+      // Simulate pixel already initialized
+      if (key === '_fbq_gtm_ids') return ['12345', '23456'];
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'init') {
+          fail('init called even though advancedMatchingList is empty and pixels are already initialized');
+        }
+      };
+
+      // Required ParamBuilder mocks
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+    });
+
+    runCode(mockData);
+
+    assertApi('gtmOnSuccess').wasCalled();
+- name: cidParams updated on first fire only initializes once with cidParams
+  code: |-
+    mockData.advancedMatchingList = [
+      {name: 'em', value: 'user@example.com'},
+      {name: 'ph', value: '5551234567'}
+    ];
+
+    let initCalls = [];
+    mock('copyFromWindow', key => {
+      // Pixels not yet initialized
+      if (key === '_fbq_gtm_ids') return [];
+      if (key === '_fbq_gtm_cidparams_initialized') return false;
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'init') {
+          initCalls.push({pixelId: arguments[1], cidParams: arguments[2]});
+        }
+      };
+
+      // Required ParamBuilder mocks
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+    });
+
+    runCode(mockData);
+
+    // Init guard runs once per pixel with cidParams.
+    // Re-init block is also entered (cidParamsInitialized was false at read time)
+    // and re-runs init for each pixel that is now in initIds — that is the
+    // intended idempotent behavior; both pixels end up correctly initialized.
+    assertThat(initCalls.length).isEqualTo(4);
+    assertThat(initCalls[0].cidParams.em).isEqualTo('user@example.com');
+    assertThat(initCalls[0].cidParams.ph).isEqualTo('5551234567');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: cidParams not re-initialized when already initialized with cidParams on a previous fire
+  code: |-
+    mockData.advancedMatchingList = [
+      {name: 'em', value: 'newuser@example.com'}
+    ];
+
+    mock('copyFromWindow', key => {
+      // Pixels already initialized AND a previous fire already pushed cidParams
+      if (key === '_fbq_gtm_ids') return ['12345', '23456'];
+      if (key === '_fbq_gtm_cidparams_initialized') return true;
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'init') {
+          fail('init called even though cidParams were already initialized on a prior fire');
+        }
+      };
+
+      // Required ParamBuilder mocks
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+    });
+
+    runCode(mockData);
+
+    assertApi('gtmOnSuccess').wasCalled();
+- name: cidParams re-init skipped when enable_reinit_cidparams gate is disabled
+  code: |-
+    mockData.advancedMatchingList = [
+      {name: 'em', value: 'user@example.com'}
+    ];
+
+    // Override the default callInWindow mock so the re-init gateCheck calls
+    // onDisabled, while the param builder gateCheck still calls onEnabled.
+    mock('callInWindow', (propName, arg1, arg2, arg3, arg4, arg5) => {
+      if (propName === 'fbq' && arg1 === 'gateCheck') {
+        if (arg2 === 'enable_reinit_cidparams') {
+          if (typeof arg4 === 'function') arg4(arg2, arg5);
+        } else {
+          if (typeof arg3 === 'function') arg3(arg2, arg5);
+        }
+      }
+      return true;
+    });
+
+    mock('copyFromWindow', key => {
+      // Pixel previously initialized without cidParams
+      if (key === '_fbq_gtm_ids') return ['12345', '23456'];
+      if (key === '_fbq_gtm_cidparams_initialized') return false;
+      if (key === 'fbq') return function() {
+        if (arguments[0] === 'init') {
+          fail('init called even though enable_reinit_cidparams gate is disabled');
+        }
+      };
+
+      // Required ParamBuilder mocks
+      if (key === 'clientParamBuilder') return {};
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+    });
+
+    runCode(mockData);
+
+    assertApi('gtmOnSuccess').wasCalled();
 - name: Send standard event
   code: "const eventParams = {\n  prop1: 'val1',\n  prop2: 'val2'\n};\n\nlet index\
     \ = 0;\nmock('copyFromWindow', key => {\n  // 1. The specific logic for this test\
