@@ -11,7 +11,7 @@ ___INFO___
 {
   "displayName": "Meta Pixel",
   "__wm": "VGVtcGxhdGUtQXV0aG9yX0ZhY2Vib29rLVNpbW8tQWhhdmE\u003d",
-  "description": "Integrate your Google Tag Manager with Meta Pixel for a streamlined way to connect your data to Meta and help maximize your advertising and measurement capabilities by understanding the actions people",
+  "description": "Integrate your GTM with Meta Pixel for a streamlined way to connect your data to Meta and help maximize your advertising and measurement by understanding the actions people take on your website.",
   "categories": [
     "ADVERTISING",
     "ANALYTICS"
