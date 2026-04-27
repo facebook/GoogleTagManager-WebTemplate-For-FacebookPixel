@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿___TERMS_OF_SERVICE___
+﻿﻿﻿﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -592,6 +592,11 @@ if (data.dpoLDU) {
   fbq('dataProcessingOptions', ['LDU'], makeNumber(data.dpoCountry), makeNumber(data.dpoState));
 }
 
+// Monitoring agent string for Tag Setup
+const agentName = 'tmSimo-GTM-WebTemplate';
+const version = '2.0.5';
+const agentSuffix = (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '');
+
 // Handle multiple, comma-separated pixel IDs,
 // and initialize each ID if not done already.
 pixelIds.split(',').forEach(pixelId => {
@@ -612,7 +617,7 @@ pixelIds.split(',').forEach(pixelId => {
     fbq('init', pixelId, cidParams);
 
     // Monitoring agent string for Tag Setup
-    const agentString = 'tmSimo-GTM-WebTemplate-2.0.4' + (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '');
+    const agentString = agentName + '-' + version + agentSuffix;
     fbq('set','agent', agentString, pixelId);
 
     initIds.push(pixelId);
@@ -638,11 +643,13 @@ if (data.advancedMatchingList && data.advancedMatchingList.length) {
     callInWindow(
       'fbq',
       'gateCheck',
-      'enable_reinit_cidparams',
+      'enable_reinit_cidparams2',
       function(gateName, pixelID) {
         pixelIds.split(',').forEach(pixelId => {
           if (initIds.indexOf(pixelId) !== -1) {
             fbq('init', pixelId, cidParams);
+            const reinitAgentString = agentName + '-' + version + agentSuffix + '-REINIT';
+            fbq('set', 'agent', reinitAgentString, pixelId);
           }
         });
       },
@@ -1725,7 +1732,7 @@ scenarios:
     runCode(mockData);
 
     assertApi('gtmOnSuccess').wasCalled();
-- name: cidParams re-init skipped when enable_reinit_cidparams gate is disabled
+- name: cidParams re-init skipped when enable_reinit_cidparams2 gate is disabled
   code: |-
     mockData.advancedMatchingList = [
       {name: 'em', value: 'user@example.com'}
@@ -1735,7 +1742,7 @@ scenarios:
     // onDisabled, while the param builder gateCheck still calls onEnabled.
     mock('callInWindow', (propName, arg1, arg2, arg3, arg4, arg5) => {
       if (propName === 'fbq' && arg1 === 'gateCheck') {
-        if (arg2 === 'enable_reinit_cidparams') {
+        if (arg2 === 'enable_reinit_cidparams2') {
           if (typeof arg4 === 'function') arg4(arg2, arg5);
         } else {
           if (typeof arg3 === 'function') arg3(arg2, arg5);
@@ -1750,7 +1757,7 @@ scenarios:
       if (key === '_fbq_gtm_cidparams_initialized') return false;
       if (key === 'fbq') return function() {
         if (arguments[0] === 'init') {
-          fail('init called even though enable_reinit_cidparams gate is disabled');
+          fail('init called even though enable_reinit_cidparams2 gate is disabled');
         }
       };
 
