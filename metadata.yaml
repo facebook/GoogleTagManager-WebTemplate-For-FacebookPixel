@@ -2,9 +2,11 @@ homepage: "https://www.simoahava.com/"
 documentation: "https://www.simoahava.com/custom-templates/facebook-pixel"
 versions:
   # Latest version
+  - sha: 0c5744aa825efe4db148643760872a81f5c26d13
+    changeNotes: v2.0.6 Fix bug where ParamBuilder failed when clientParamBuilder was not present on the window object.
+  # Older versions
   - sha: 19af95e8fc75947e50fbb65b632fb3eeb6926444
     changeNotes: v2.0.5 Refactor agent string into shared constants and update reinit gate name to enable_reinit_cidparams2.
-  # Older versions
   - sha: baca9b502f6c299e7e3cd76a5ecae2b748509b48
     changeNotes: v2.0.4 Update Reinit and fix description.
   - sha: e0ac315f5a8c9427b7acbe4d8793274fc7fe3b20
