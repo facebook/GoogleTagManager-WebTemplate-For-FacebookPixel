@@ -1,4 +1,4 @@
-﻿﻿﻿___TERMS_OF_SERVICE___
+﻿﻿﻿﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -594,7 +594,7 @@ if (data.dpoLDU) {
 
 // Monitoring agent string for Tag Setup
 const agentName = 'tmSimo-GTM-WebTemplate';
-const version = '2.0.6';
+const version = '2.0.5';
 const agentSuffix = (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '');
 
 // Handle multiple, comma-separated pixel IDs,
@@ -731,8 +731,6 @@ if (data.useGA4Ecommerce) {
 // Inject Param Builder script if enabled
 const onParamBuilderFailure = () => {
   log('Facebook Pixel: Failed to load clientParamBuilder script');
-  setInWindow('_fbq_param_builder_status', 'complete', true);
-  data.gtmOnSuccess();
 };
 
 // Param Builder callback - called after script loads
@@ -741,8 +739,6 @@ const processAndCollectAllParams = () => {
   const clientParamBuilder = copyFromWindow('clientParamBuilder');
   if (!clientParamBuilder) {
     log("ERROR: clientParamBuilder wasn't loaded correctly.");
-    setInWindow('_fbq_param_builder_status', 'complete', true);
-    data.gtmOnSuccess();
     return;
   }
 
@@ -1712,7 +1708,8 @@ scenarios:
     assertThat(initCalls[0].cidParams.em).isEqualTo('user@example.com');
     assertThat(initCalls[0].cidParams.ph).isEqualTo('5551234567');
     assertApi('gtmOnSuccess').wasCalled();
-- name: cidParams not re-initialized when already initialized with cidParams on a previous fire
+- name: cidParams not re-initialized when already initialized with cidParams on a
+    previous fire
   code: |-
     mockData.advancedMatchingList = [
       {name: 'em', value: 'newuser@example.com'}
@@ -2191,93 +2188,6 @@ scenarios:
     runCode(mockData);\n\n// 1. Verify it did NOT attempt to inject the script\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');\n\
     \n// 2. Verify it did NOT call the function (saving the cookie write)\nassertThat(processCalled).isFalse();\n\
     \n// 3. Verify the tag still finished successfully\nassertApi('gtmOnSuccess').wasCalled();"
-- name: ParamBuilder clientParamBuilder global undefined - graceful skip (not stuck running)
-  code: |-
-    // Regression: Magento 2 checkout (Hyva/Luma) scenario where bundle loads but
-    // clientParamBuilder never attaches to window. Tag must not hang "Still running".
-    mock('injectScript', (url, onsuccess, onfailure, token) => {
-      if (onsuccess) onsuccess();
-    });
-
-    mock('callInWindow', (propName, arg1, arg2, arg3) => {
-      if (propName === 'fbq' && arg1 === 'gateCheck') {
-        if (typeof arg3 === 'function') arg3(true);
-      }
-      return true;
-    });
-
-    mock('copyFromWindow', key => {
-      if (key === 'fbq') return () => {};
-      if (key === '_fbq_gtm_ids') return [];
-      if (key === 'clientParamBuilder') return undefined;
-      return undefined;
-    });
-
-    runCode(mockData);
-
-    assertApi('logToConsole').wasCalledWith("ERROR: clientParamBuilder wasn't loaded correctly.");
-    assertApi('gtmOnSuccess').wasCalled();
-    assertApi('gtmOnFailure').wasNotCalled();
-- name: ParamBuilder script load fails - graceful skip (not stuck running)
-  code: |-
-    // Regression: Network error / CSP block on the ParamBuilder bundle URL must
-    // not leave the tag hanging or fail the whole pixel event.
-    injectedUrls = [];
-    mock('injectScript', (url, onsuccess, onfailure, token) => {
-      injectedUrls.push(url);
-      if (url === 'https://connect.facebook.net/en_US/fbevents.js') {
-        if (onsuccess) onsuccess();
-      } else {
-        if (onfailure) onfailure();
-      }
-    });
-
-    mock('callInWindow', (propName, arg1, arg2, arg3) => {
-      if (propName === 'fbq' && arg1 === 'gateCheck') {
-        if (typeof arg3 === 'function') arg3(true);
-      }
-      return true;
-    });
-
-    runCode(mockData);
-
-    assertThat(injectedUrls).contains('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');
-    assertApi('logToConsole').wasCalledWith('Facebook Pixel: Failed to load clientParamBuilder script');
-    assertApi('gtmOnSuccess').wasCalled();
-    assertApi('gtmOnFailure').wasNotCalled();
-- name: ParamBuilder failure clears loading status so subsequent tags can proceed
-  code: |-
-    // Regression: If we leave _fbq_param_builder_status === 'loading' forever,
-    // every subsequent tag fire on the page skips injection AND skips gtmOnSuccess
-    // path through gtmSuccess; more importantly, it masks the failure for observability.
-    let statusWrites = [];
-    mock('setInWindow', (key, val) => {
-      if (key === '_fbq_param_builder_status') statusWrites.push(val);
-    });
-
-    mock('injectScript', (url, onsuccess, onfailure, token) => {
-      if (onsuccess) onsuccess();
-    });
-
-    mock('callInWindow', (propName, arg1, arg2, arg3) => {
-      if (propName === 'fbq' && arg1 === 'gateCheck') {
-        if (typeof arg3 === 'function') arg3(true);
-      }
-      return true;
-    });
-
-    mock('copyFromWindow', key => {
-      if (key === 'fbq') return () => {};
-      if (key === '_fbq_gtm_ids') return [];
-      if (key === 'clientParamBuilder') return undefined;
-      return undefined;
-    });
-
-    runCode(mockData);
-
-    assertThat(statusWrites).contains('loading');
-    assertThat(statusWrites).contains('complete');
-    assertApi('gtmOnSuccess').wasCalled();
 - name: ParamBuilder already called in proc - complete state
   code: "// Simulate that the flag is already set from a previous event\nmock('copyFromWindow',\
     \ key => {\n  if (key === '_fbq_param_builder_status') return 'complete'; \n \
