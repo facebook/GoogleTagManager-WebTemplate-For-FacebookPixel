@@ -2,9 +2,11 @@ homepage: "https://www.simoahava.com/"
 documentation: "https://www.simoahava.com/custom-templates/facebook-pixel"
 versions:
   # Latest version
+  - sha: ef36d6e324dc0f69a54ed3454204f5ea35bbe43b
+    changeNotes: v2.0.6 Add Terms of Service.
+  # Older versions
   - sha: c40306cdfefe3a0267bf4b1b9d4190dca6a9693e
     changeNotes: Redeploy v2.0.6. Fix bug where ParamBuilder failed when clientParamBuilder was not present on the window object.
-  # Older versions
   - sha: 8c5197c2870088bb9c45ffc76537ee4b24b91014
     changeNotes: Revert to v2.0.5.
   - sha: 0c5744aa825efe4db148643760872a81f5c26d13
