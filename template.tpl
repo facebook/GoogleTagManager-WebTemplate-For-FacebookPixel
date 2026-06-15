@@ -242,6 +242,27 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "GROUP",
+    "name": "metaCAPIOptInGroup",
+    "displayName": "Meta-enabled Conversions API integration",
+    "groupStyle": "ZIPPY_OPEN",
+    "subParams": [
+      {
+        "type": "LABEL",
+        "name": "optInMetaCAPIConsent",
+        "displayName": "You hereby authorize and instruct Meta to set up a Meta-enabled Conversions API integration on your behalf, and you agree that your use of the integration will be subject to Meta\u2019s \u003ca href\u003d\"https://www.facebook.com/legal/terms\"\u003ePlatform Terms\u003c/a\u003e and \u003ca href\u003d\"https://www.facebook.com/legal/technology_terms\"\u003eBusiness Tools Terms\u003c/a\u003e."
+      },
+      {
+        "type": "CHECKBOX",
+        "name": "optInMetaCAPI",
+        "checkboxText": "Opt in to a Meta-enabled Conversions API integration",
+        "simpleValueType": true,
+        "defaultValue": true,
+        "alwaysInSummary": true
+      }
+    ]
+  },
+  {
+    "type": "GROUP",
     "name": "dataProcessingOptionsGroup",
     "displayName": "Data Processing Options",
     "groupStyle": "ZIPPY_CLOSED",
@@ -594,8 +615,8 @@ if (data.dpoLDU) {
 
 // Monitoring agent string for Tag Setup
 const agentName = 'tmSimo-GTM-WebTemplate';
-const version = '2.0.7';
-const agentSuffix = (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '');
+const version = '2.0.8';
+const agentSuffix = (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '') + (data.optInMetaCAPI !== false ? '-fcg' : '');
 
 // Handle multiple, comma-separated pixel IDs,
 // and initialize each ID if not done already.
@@ -612,6 +633,12 @@ pixelIds.split(',').forEach(pixelId => {
       setInWindow('fbq.disablePushState', true);
     }
 
+    // Signal opt-in to Meta-enabled CAPI integration before init. Treat
+    // undefined as opted-in so tags created before this field existed
+    // continue to opt in without requiring the advertiser to re-save the tag.
+    if (data.optInMetaCAPI !== false) {
+      fbq('optinMetaEnabledCapi', pixelId);
+    }
 
     // Initialize pixel and store in global array
     fbq('init', pixelId, cidParams);
@@ -1913,6 +1940,91 @@ scenarios:
     \ return undefined;\n  if (key === 'clientParamBuilder.processAndCollectParams')\
     \ return undefined;\n});\n\nrunCode(mockData);\n\nassertApi('gtmOnSuccess').wasNotCalled();\n\
     assertApi('gtmOnFailure').wasCalled();"
+- name: optInMetaCAPI true - fbq optin signal fires before init
+  code: |-
+    mockData.optInMetaCAPI = true;
+    let calls = [];
+    mock('callInWindow', (propName, arg1, arg2, arg3) => {
+      if (propName === 'fbq' && arg1 === 'gateCheck') {
+        if (typeof arg3 === 'function') arg3(true);
+      }
+      return true;
+    });
+    mock('copyFromWindow', key => {
+      if (key === 'fbq') return function() {
+        calls.push(arguments[0]);
+      };
+      if (key === 'fbq.callMethod.apply') return () => {};
+      if (key === '_fbq_gtm_ids') return [];
+      if (key === 'clientParamBuilder') return { processAndCollectAllParams: () => {} };
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+      if (key === 'clientParamBuilder.processAndCollectParams') return () => {};
+      return undefined;
+    });
+
+    runCode(mockData);
+
+    const optinIdx = calls.indexOf('optinMetaEnabledCapi');
+    const initIdx = calls.indexOf('init');
+    assertThat(optinIdx).isGreaterThan(-1);
+    assertThat(initIdx).isGreaterThan(-1);
+    assertThat(optinIdx).isLessThan(initIdx);
+    assertApi('gtmOnSuccess').wasCalled();
+- name: optInMetaCAPI undefined - legacy tag still opts in
+  code: |-
+    // Old tags created before optInMetaCAPI existed have data.optInMetaCAPI === undefined.
+    // The runtime must treat undefined as opted-in (no re-save required after upgrade).
+    mockData.optInMetaCAPI = undefined;
+    let calls = [];
+    mock('callInWindow', (propName, arg1, arg2, arg3) => {
+      if (propName === 'fbq' && arg1 === 'gateCheck') {
+        if (typeof arg3 === 'function') arg3(true);
+      }
+      return true;
+    });
+    mock('copyFromWindow', key => {
+      if (key === 'fbq') return function() {
+        calls.push(arguments[0]);
+      };
+      if (key === 'fbq.callMethod.apply') return () => {};
+      if (key === '_fbq_gtm_ids') return [];
+      if (key === 'clientParamBuilder') return { processAndCollectAllParams: () => {} };
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+      if (key === 'clientParamBuilder.processAndCollectParams') return () => {};
+      return undefined;
+    });
+
+    runCode(mockData);
+
+    assertThat(calls).contains('optinMetaEnabledCapi');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: optInMetaCAPI false - fbq optin signal suppressed
+  code: |-
+    mockData.optInMetaCAPI = false;
+    let calls = [];
+    mock('callInWindow', (propName, arg1, arg2, arg3) => {
+      if (propName === 'fbq' && arg1 === 'gateCheck') {
+        if (typeof arg3 === 'function') arg3(true);
+      }
+      return true;
+    });
+    mock('copyFromWindow', key => {
+      if (key === 'fbq') return function() {
+        calls.push(arguments[0]);
+      };
+      if (key === 'fbq.callMethod.apply') return () => {};
+      if (key === '_fbq_gtm_ids') return [];
+      if (key === 'clientParamBuilder') return { processAndCollectAllParams: () => {} };
+      if (key === 'clientParamBuilder.processAndCollectAllParams') return () => {};
+      if (key === 'clientParamBuilder.processAndCollectParams') return () => {};
+      return undefined;
+    });
+
+    runCode(mockData);
+
+    assertThat(calls).doesNotContain('optinMetaEnabledCapi');
+    assertThat(calls).contains('init');
+    assertApi('gtmOnSuccess').wasCalled();
 - name: GK off pixel load successfully
   code: "// Reset the array instead of re-declaring it\ninjectedUrls = [];\n\nmock('injectScript',\
     \ (url, onsuccess, onfailure, token) => {\n  injectedUrls.push(url);\n  if (onsuccess)\
