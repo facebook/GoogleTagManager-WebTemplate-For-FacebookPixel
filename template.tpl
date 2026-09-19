@@ -508,7 +508,8 @@ const math = require('Math');
 const log = require('logToConsole');
 const getUrl = require('getUrl');
 
-const PARAM_BUILDER_SCRIPT_URL = 'https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js';
+const PARAM_BUILDER_PRIMARY_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js';
+const PARAM_BUILDER_FALLBACK_SCRIPT_URL = 'https://unpkg.com/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js';
 
 const initIds = copyFromWindow('_fbq_gtm_ids') || [];
 const pixelIds = data.pixelId;
@@ -615,7 +616,7 @@ if (data.dpoLDU) {
 
 // Monitoring agent string for Tag Setup
 const agentName = 'tmSimo-GTM-WebTemplate';
-const version = '2.0.8';
+const version = '2.0.9';
 const agentSuffix = (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommerce ? '-GA4' : '') + (data.optInMetaCAPI !== false ? '-fcg' : '');
 
 // Handle multiple, comma-separated pixel IDs,
@@ -780,6 +781,10 @@ const processAndCollectAllParams = () => {
   }
 };
 
+const loadParamBuilderFallback = () => {
+  injectScript(PARAM_BUILDER_FALLBACK_SCRIPT_URL, processAndCollectAllParams, onParamBuilderFailure, PARAM_BUILDER_FALLBACK_SCRIPT_URL);
+};
+
 
 function gtmSuccess() {
   const status = copyFromWindow('_fbq_param_builder_status');
@@ -799,7 +804,7 @@ function gtmSuccess() {
     'gateCheck',
     'enable_gtm_parambuilder',
     function(gateName, pixelID) {
-      injectScript(PARAM_BUILDER_SCRIPT_URL, processAndCollectAllParams, onParamBuilderFailure, PARAM_BUILDER_SCRIPT_URL);
+      injectScript(PARAM_BUILDER_PRIMARY_SCRIPT_URL, processAndCollectAllParams, loadParamBuilderFallback, PARAM_BUILDER_PRIMARY_SCRIPT_URL);
     },
     function(gateName, pixelID) {
       data.gtmOnSuccess();
@@ -1363,7 +1368,11 @@ ___WEB_PERMISSIONS___
               },
               {
                 "type": 1,
-                "string": "https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js"
+                "string": "https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js"
+              },
+              {
+                "type": 1,
+                "string": "https://unpkg.com/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js"
               }
             ]
           }
@@ -1470,7 +1479,7 @@ scenarios:
     assertThat(injectedUrls).contains('https://connect.facebook.net/en_US/fbevents.js');
 
     // 2. Verify the Param Builder URL was requested
-    assertThat(injectedUrls).contains('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');
+    assertThat(injectedUrls).contains('https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js');
 
     // 3. Verify the template finished successfully
     assertApi('gtmOnSuccess').wasCalled();
@@ -2036,7 +2045,7 @@ scenarios:
     \    }\n  }\n  return true; \n});\n\n// Run the template\nrunCode(mockData);\n\
     \n// 1. Verify the template finished successfully\nassertApi('gtmOnSuccess').wasCalled();\n\
     assertApi('gtmOnFailure').wasNotCalled();\n\n// 2. Verify the Param Builder script\
-    \ was skipped\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');"
+    \ was skipped\nassertThat(injectedUrls).doesNotContain('https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js');"
 - name: GA4 gate enabled - eventModel merged into tracking
   code: |-
     mockData.useGA4Ecommerce = true;
@@ -2211,7 +2220,7 @@ scenarios:
     });\n\n// Run the template\nrunCode(mockData);\n\n// 1. Verify failure was called\
     \ and success was not\nassertApi('gtmOnFailure').wasCalled();\nassertApi('gtmOnSuccess').wasNotCalled();\n\
     \n// 2. Verify only the first script was attempted\nassertThat(injectedUrls).contains('https://connect.facebook.net/en_US/fbevents.js');\n\
-    assertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');"
+    assertThat(injectedUrls).doesNotContain('https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js');"
 - name: ParamBuilder already called in proc - loading state
   code: "// Simulate that the flag is already set from a previous event\nmock('copyFromWindow',\
     \ key => {\n  if (key === '_fbq_param_builder_status') return 'loading'; \n  if\
@@ -2221,7 +2230,7 @@ scenarios:
     \ (propName) => {\n   if (propName === 'clientParamBuilder.processAndCollectAllParams'\
     \ || \n       propName === 'clientParamBuilder.processAndCollectParams') {\n \
     \    processCalled = true;\n   }\n   return true;\n});\n\n// Run the template\n\
-    runCode(mockData);\n\n// 1. Verify it did NOT attempt to inject the script\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');\n\
+    runCode(mockData);\n\n// 1. Verify it did NOT attempt to inject the script\nassertThat(injectedUrls).doesNotContain('https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js');\n\
     \n// 2. Verify it did NOT call the function (saving the cookie write)\nassertThat(processCalled).isFalse();\n\
     \n// 3. Verify the tag still finished successfully\nassertApi('gtmOnSuccess').wasCalled();"
 - name: ParamBuilder clientParamBuilder global undefined - graceful skip (not stuck
@@ -2275,7 +2284,8 @@ scenarios:
 
     runCode(mockData);
 
-    assertThat(injectedUrls).contains('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');
+    assertThat(injectedUrls).contains('https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js');
+    assertThat(injectedUrls).contains('https://unpkg.com/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js');
     assertApi('logToConsole').wasCalledWith('Facebook Pixel: Failed to load clientParamBuilder script');
     assertApi('gtmOnSuccess').wasCalled();
     assertApi('gtmOnFailure').wasNotCalled();
@@ -2321,7 +2331,7 @@ scenarios:
     \ (propName) => {\n   if (propName === 'clientParamBuilder.processAndCollectAllParams'\
     \ || \n       propName === 'clientParamBuilder.processAndCollectParams') {\n \
     \    processCalled = true;\n   }\n   return true;\n});\n\n// Run the template\n\
-    runCode(mockData);\n\n// 1. Verify it did NOT attempt to inject the script\nassertThat(injectedUrls).doesNotContain('https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js');\n\
+    runCode(mockData);\n\n// 1. Verify it did NOT attempt to inject the script\nassertThat(injectedUrls).doesNotContain('https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js');\n\
     \n// 2. Verify it did NOT call the function (saving the cookie write)\nassertThat(processCalled).isFalse();\n\
     \n// 3. Verify the tag still finished successfully\nassertApi('gtmOnSuccess').wasCalled();"
 setup: "const mockData = {\n  pixelId: '12345,23456',\n  eventName: 'standard',\n\
