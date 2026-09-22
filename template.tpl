@@ -1,4 +1,4 @@
-﻿﻿___TERMS_OF_SERVICE___
+___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -621,6 +621,7 @@ const agentSuffix = (data.enhancedEcommerce ? '-EEC' : '') + (data.useGA4Ecommer
 
 // Handle multiple, comma-separated pixel IDs,
 // and initialize each ID if not done already.
+const newlyInitIds = [];
 pixelIds.split(',').forEach(pixelId => {
   if (initIds.indexOf(pixelId) === -1) {
 
@@ -649,6 +650,7 @@ pixelIds.split(',').forEach(pixelId => {
     fbq('set','agent', agentString, pixelId);
 
     initIds.push(pixelId);
+    newlyInitIds.push(pixelId);
     setInWindow('_fbq_gtm_ids', initIds, true);
 
     // If this first-time init included cidParams, mark the page as
@@ -664,7 +666,7 @@ pixelIds.split(',').forEach(pixelId => {
 //   - we have NOT yet initialized any pixel with cidParams on this page.
 if (data.advancedMatchingList && data.advancedMatchingList.length) {
   pixelIds.split(',').forEach(pixelId => {
-    if (initIds.indexOf(pixelId) !== -1) {
+    if (initIds.indexOf(pixelId) !== -1 && newlyInitIds.indexOf(pixelId) === -1) {
       fbq('init', pixelId, cidParams);
       const reinitAgentString = agentName + '-' + version + agentSuffix + '-REINIT';
       fbq('set', 'agent', reinitAgentString, pixelId);
@@ -2370,3 +2372,4 @@ setup: "const mockData = {\n  pixelId: '12345,23456',\n  eventName: 'standard',\
 ___NOTES___
 
 Created on 18/05/2019, 21:57:16
+
