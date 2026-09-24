@@ -1,4 +1,4 @@
-name: Publish GitHub Releases
+name: Publish GitHub Release
 
 on:
   push:
@@ -6,19 +6,18 @@ on:
       - main
     paths:
       - metadata.yaml
-      - .github/workflows/publish-releases.yml
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: publish-github-releases
+  group: publish-github-release
   cancel-in-progress: false
 
 jobs:
-  publish-missing-releases:
-    name: Publish missing releases
+  publish-release:
+    name: Publish latest release
     if: github.repository == 'facebook/GoogleTagManager-WebTemplate-For-FacebookPixel'
     runs-on: ubuntu-latest
     steps:
@@ -27,109 +26,71 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build release plan from metadata.yaml
-        env:
-          MIN_VERSION: 2.0.8
+      - name: Read latest release from metadata.yaml
+        id: release
         run: |
-          ruby -ryaml -rjson -rrubygems <<'RUBY'
+          ruby -ryaml <<'RUBY'
           metadata = YAML.safe_load(File.read('metadata.yaml'), aliases: false)
-          entries = metadata.fetch('versions')
-          minimum_version = Gem::Version.new(ENV.fetch('MIN_VERSION'))
+          entry = metadata.fetch('versions').first
+          notes = entry.fetch('changeNotes').to_s.strip
+          match = notes.match(/\Av?(\d+\.\d+\.\d+)\b/)
+          abort 'The first metadata.yaml entry must start with a semantic version' unless match
 
-          latest_notes = entries.first.fetch('changeNotes').to_s.strip
-          latest_match = latest_notes.match(/\Av?(\d+\.\d+\.\d+)\b/)
-          abort 'The first metadata.yaml entry must start with a semantic version' unless latest_match
-          latest_version = latest_match[1]
+          version = match[1]
+          sha = entry.fetch('sha').to_s
+          abort "Invalid GitHub SHA for v#{version}: #{sha}" unless sha.match?(/\A[0-9a-f]{40}\z/)
 
-          seen_versions = {}
-          releases = []
-          entries.each do |entry|
-            notes = entry.fetch('changeNotes').to_s.strip
-            match = notes.match(/\Av?(\d+\.\d+\.\d+)\b/)
-            next unless match
-
-            version = match[1]
-            next if Gem::Version.new(version) < minimum_version
-            abort "Duplicate metadata version: #{version}" if seen_versions[version]
-            seen_versions[version] = true
-
-            sha = entry.fetch('sha').to_s
-            abort "Invalid GitHub SHA for v#{version}: #{sha}" unless sha.match?(/\A[0-9a-f]{40}\z/)
-
-            releases << {
-              version: version,
-              sha: sha,
-              notes: notes.sub(/\Av?#{Regexp.escape(version)}\s*/, ''),
-              latest: version == latest_version,
-            }
+          File.open(ENV.fetch('GITHUB_OUTPUT'), 'a') do |output|
+            output.puts "version=#{version}"
+            output.puts "sha=#{sha}"
           end
 
-          abort "No releases found at or after v#{minimum_version}" if releases.empty?
-          releases.sort_by! { |release| Gem::Version.new(release.fetch(:version)) }
-
-          plan_path = File.join(ENV.fetch('RUNNER_TEMP'), 'releases.json')
-          File.write(plan_path, JSON.pretty_generate(releases))
-          puts JSON.pretty_generate(releases)
+          notes_path = File.join(ENV.fetch('RUNNER_TEMP'), 'release-notes.md')
+          File.write(notes_path, notes.sub(/\Av?#{Regexp.escape(version)}\s*/, ''))
           RUBY
 
-      - name: Validate and publish missing releases
+      - name: Validate and publish release
         env:
           GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.release.outputs.sha }}
+          VERSION: ${{ steps.release.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
 
-          while IFS= read -r release; do
-            version=$(jq -r '.version' <<< "$release")
-            sha=$(jq -r '.sha' <<< "$release")
-            notes=$(jq -r '.notes' <<< "$release")
-            is_latest=$(jq -r '.latest' <<< "$release")
-            tag="v${version}"
+          tag="v${VERSION}"
+          git cat-file -e "${SHA}^{commit}"
 
-            git cat-file -e "${sha}^{commit}"
-            template_version=$(git show "${sha}:template.tpl" |
-              sed -nE "s/^const version = '([^']+)';$/\1/p")
-            if [[ "$template_version" != "$version" ]]; then
-              echo "::error::metadata.yaml says v${version}, but template.tpl at ${sha} says v${template_version}"
+          template_version=$(git show "${SHA}:template.tpl" |
+            sed -nE "s/^const version = '([^']+)';$/\1/p")
+          if [[ "$template_version" != "$VERSION" ]]; then
+            echo "::error::metadata.yaml says v${VERSION}, but template.tpl at ${SHA} says v${template_version}"
+            exit 1
+          fi
+
+          tag_args=(--target "$SHA")
+          if git show-ref --verify --quiet "refs/tags/${tag}"; then
+            tag_sha=$(git rev-list -n 1 "$tag")
+            if [[ "$tag_sha" != "$SHA" ]]; then
+              echo "::error::Existing tag ${tag} targets ${tag_sha}, expected ${SHA}"
               exit 1
             fi
+            tag_args=(--verify-tag)
+          fi
 
-            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-              echo "Release ${tag} already exists; skipping."
-              continue
-            fi
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release ${tag} already exists; marking it as latest."
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --latest
+            exit 0
+          fi
 
-            tag_args=(--target "$sha")
-            if git show-ref --verify --quiet "refs/tags/${tag}"; then
-              tag_sha=$(git rev-list -n 1 "$tag")
-              if [[ "$tag_sha" != "$sha" ]]; then
-                echo "::error::Existing tag ${tag} targets ${tag_sha}, expected ${sha}"
-                exit 1
-              fi
-              tag_args=(--verify-tag)
-            fi
+          asset_name="facebook-pixel-gtm-template-${VERSION}.tpl"
+          asset_path="${RUNNER_TEMP}/${asset_name}"
+          git show "${SHA}:template.tpl" > "$asset_path"
 
-            asset_name="facebook-pixel-gtm-template-${version}.tpl"
-            asset_path="${RUNNER_TEMP}/${asset_name}"
-            notes_path="${RUNNER_TEMP}/release-notes-${version}.md"
-            git show "${sha}:template.tpl" > "$asset_path"
-            printf '%s\n' "$notes" > "$notes_path"
-
-            latest_args=(--latest=false)
-            if [[ "$is_latest" == "true" ]]; then
-              latest_args=(--latest)
-            fi
-
-            gh release create "$tag" "$asset_path" \
-              --repo "$GITHUB_REPOSITORY" \
-              "${tag_args[@]}" \
-              --title "Release ${version}" \
-              --notes-file "$notes_path" \
-              "${latest_args[@]}"
-          done < <(jq -c '.[]' "$RUNNER_TEMP/releases.json")
-
-          latest_version=$(jq -r '.[] | select(.latest) | .version' \
-            "$RUNNER_TEMP/releases.json")
-          gh release edit "v${latest_version}" \
+          gh release create "$tag" "$asset_path" \
             --repo "$GITHUB_REPOSITORY" \
+            "${tag_args[@]}" \
+            --title "Release ${VERSION}" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
             --latest
